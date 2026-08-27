@@ -1,0 +1,140 @@
+# Cursor AI Rules for Hotel Booking and Management App (Booka)
+
+## Project Overview
+Booka is a full-stack hotel booking and management platform with two primary audiences:
+- **Guests** — search hotels, view availability, book rooms, manage reservations, and use a RAG-powered help assistant for hotel FAQs and booking guidance.
+- **Hotel staff / admins** — manage properties, room inventory, pricing, bookings, check-in/check-out, and use a staff-only RAG assistant for internal SOPs and operational docs.
+
+Always align code and naming with this domain (hotels, rooms, room types, bookings, guests, availability, rates).
+
+## Global Rules
+- Prioritize clean, readable, and modular code.
+- Write brief, descriptive commit messages.
+- Never hardcode sensitive credentials; use environment variables (`.env`).
+- Use consistent naming across backend and frontend (e.g. `Booking`, `RoomType`, `checkInDate`).
+- Validate business rules at the Service layer, not only in controllers or UI.
+
+## Domain Concepts
+- **Hotel** — a property with address, amenities, policies, and room inventory.
+- **Room Type** — category of room (e.g. Standard, Deluxe); defines capacity, base rate, and amenities.
+- **Room** — physical unit belonging to a room type; may have a room number and status (available, occupied, maintenance).
+- **Booking / Reservation** — guest stay for a date range; links guest, room type or room, and pricing.
+- **Guest** — person making or associated with a booking.
+- **Availability** — rooms or room types available for a given check-in/check-out range.
+- **Rate / Pricing** — nightly or seasonal pricing; may vary by room type and date.
+- **Blackout Date** — a date range when booking is blocked for a hotel (property-wide) or a specific room type (e.g. maintenance, private events, holidays).
+
+## Backend (Java / Spring Boot)
+- Use Java 17+ features (Records for DTOs, pattern matching, text blocks where appropriate).
+- Architecture: strictly follow Controller → Service → Repository.
+- Never expose JPA entities in REST controllers; map to/from DTOs in the Service layer.
+- Follow RESTful conventions (`/api/hotels`, `/api/bookings`, `/api/rooms`, etc.).
+- Use Liquibase or Flyway for migrations; do not rely on `hibernate.hbm2ddl.auto=update` in production.
+- Use Lombok (`@Data`, `@Builder`, `@Slf4j`) to reduce boilerplate.
+- Enforce booking invariants in services:
+  - Check-in date must be before check-out date.
+  - No overlapping bookings for the same room.
+  - Respect max occupancy per room type.
+  - Handle cancellation policies and booking status transitions (pending → confirmed → checked-in → checked-out / cancelled).
+  - Reject bookings and availability that overlap **blackout dates** (hotel-wide or room-type scoped).
+- Use transactions for multi-step operations (create booking + update availability).
+- Return meaningful HTTP status codes and structured error responses for validation and conflict cases (e.g. room unavailable, dates blacked out).
+
+## Blackout Date Management
+- Blackout dates block new bookings for a hotel and/or specific room type over a date range.
+- Scope: `hotelId` required; `roomTypeId` optional — `null` means property-wide blackout affecting all room types.
+- Date semantics: use `[startDate, endDate)` (inclusive start, exclusive end), consistent with check-in/check-out stays.
+- Enforce in the Service layer for both availability search and booking creation:
+  - Overlap rule: a stay `[checkIn, checkOut)` conflicts when `blackout.startDate < checkOut AND blackout.endDate > checkIn`.
+  - Hotel-wide blackouts apply to every room type; room-type blackouts apply only to that type.
+- Admin/staff can create, list, and delete blackout dates for their hotel; validate `startDate < endDate` and no duplicate overlapping entries for the same scope.
+- Expose admin endpoints under `/api/v1/admin/blackout-dates`; optionally expose read-only public blackout info for guest date-picker hints.
+- Do not allow blackout deletion to retroactively cancel existing confirmed bookings — only block **new** reservations.
+
+## Frontend (React / TypeScript)
+- Use functional components and React Hooks only; no class components.
+- Define strict TypeScript interfaces for API responses, form data, and component props; avoid `any`.
+- Use Tailwind CSS for styling with a mobile-first, responsive layout.
+- Use Zustand for global state (auth session, selected hotel, booking draft) and TanStack Query for server data fetching and caching.
+- Keep components small and reusable; organize by feature (e.g. `booking/`, `hotel/`, `admin/`).
+- Booking flow UX:
+  - Date-range picker for check-in/check-out with clear validation feedback.
+  - Show real-time or fetched availability before confirming a booking.
+  - Display pricing breakdown (nightly rate, taxes, total) before payment or confirmation.
+- Admin UX:
+  - Dashboard views for occupancy, upcoming check-ins/check-outs, and booking status.
+  - CRUD flows for hotels, room types, rooms, rate management, and **blackout dates**.
+  - Blackout management UI: date-range picker, optional room-type scope, reason/note, list with delete action.
+- Preserve in-progress booking state across navigation (e.g. dates, selected room) until submitted or cleared.
+
+## RAG Assistant (Groq + OpenAI-Compatible API)
+Booka includes a Retrieval-Augmented Generation (RAG) assistant powered by Groq for fast inference. Groq is used via its **OpenAI-compatible API** so the same client/SDK patterns apply on backend and tooling.
+
+### Groq Client Configuration
+- Use the OpenAI-compatible endpoint: `base_url=https://api.groq.com/openai/v1`.
+- Store `GROQ_API_KEY` in environment variables; never commit it or expose it to the frontend.
+- Prefer Groq chat models such as `llama-3.3-70b-versatile` for Q&A; choose smaller/faster models for low-latency public chat if needed.
+- All LLM calls must go through the backend — the frontend never holds or calls Groq directly.
+- Handle Groq rate limits with retries, backoff, and graceful degradation (fallback message, not a hard crash).
+
+### Embeddings & Vector Store
+- Groq does **not** provide an embeddings API; generate embeddings separately.
+- Prefer local embeddings (e.g. `sentence-transformers/all-MiniLM-L6-v2`) or a dedicated embedding provider; keep the choice configurable via env vars.
+- Chunk ingested documents (policies, FAQs, SOPs) with overlap; store vectors in a persistent vector store (e.g. pgvector, Chroma, or FAISS for dev).
+- Re-index documents when hotel content changes (amenities, rates, policies, internal procedures).
+
+### Dual Audiences — Strict Access Separation
+Implement **two RAG contexts** with role-based retrieval; never mix internal and public knowledge in the same query path.
+
+| Audience | Purpose | Example sources |
+|----------|---------|-----------------|
+| **Public users (guests)** | Booking help, hotel info, amenities, cancellation policy, local FAQs | Public hotel pages, guest-facing policies, room-type descriptions |
+| **Hotel employees (staff/admin)** | Operations, SOPs, check-in procedures, housekeeping, escalation, property-specific runbooks | Internal manuals, staff training docs, property admin uploads |
+
+Rules:
+- Tag every document/chunk with `audience` (`PUBLIC`, `STAFF`) and optionally `hotelId` for multi-property scoping.
+- At retrieval time, filter vectors by the authenticated user's role and hotel scope — staff may see public + staff docs; guests may see **public only**.
+- Do not leak staff-only context, filenames, or citations to public users in responses or API payloads.
+- Expose separate endpoints or a single endpoint with explicit `audience` derived from auth, not from client input alone.
+
+### RAG Pipeline
+1. **Ingest** — upload or sync documents (PDF, Markdown, HTML); extract text, chunk, embed, persist metadata.
+2. **Route intent** — classify messages before retrieval:
+   - Guests: FAQ vs AVAILABILITY/BOOKING
+   - Staff: SOP vs AVAILABILITY vs BLACKOUT vs SUMMARY (dashboard/occupancy)
+3. **Retrieve** — for FAQ/SOP intents, embed the user query; fetch top-k chunks filtered by audience/hotel; apply similarity threshold to reduce noise.
+4. **Tool call (property data)** — for availability/booking intents, invoke hotel availability APIs (respect blackout dates); for staff blackout/summary intents, invoke blackout and dashboard APIs; never invent inventory, prices, blackouts, or occupancy.
+5. **Generate** — send retrieved context and/or live property facts + conversation history to Groq; use a system prompt that enforces grounding.
+6. **Respond** — return the answer with source citations and, where relevant, structured room options, blackout lists, or property summary stats.
+
+Prompting requirements:
+- Instruct the model to answer **only** from retrieved context or live tool results; say "I don't have that information" when context is insufficient.
+- For booking-related questions, **must** invoke existing booking/search APIs rather than inventing availability or prices.
+- For staff questions about blackout dates, occupancy, check-ins/outs, booking counts by month (including "next month"), or property status, **must** invoke live admin/property APIs rather than SOP documents alone.
+- For relative periods such as "next month", confirm the resolved calendar month in chat before returning booking counts.
+- When dates are missing or vague (e.g. "October"), ask for exact check-in/check-out and guest count, or run a bounded sample search and clearly label it as approximate.
+- Keep system prompts separate for public vs. staff personas (concierge tone vs. operational assistant).
+
+### Frontend (RAG UX)
+- Provide a chat UI for guests (help widget on booking/search flows) and a separate staff assistant in the admin area.
+- Show streaming responses when supported; display source citations beneath answers.
+- Preserve chat session in Zustand or server-side session; clear sensitive staff threads on logout.
+- Disable input and show a clear message when RAG is unavailable (API down, rate limited).
+
+### API & Security
+- Endpoints: e.g. `/api/v1/rag/chat` (authenticated; audience inferred from role) and optional public `/api/v1/rag/public/chat` with stricter rate limiting.
+- Rate-limit public RAG more aggressively than staff RAG; log queries for audit on staff endpoints.
+- Sanitize uploaded documents; scan file types and size limits before ingestion.
+- Do not send PII (guest names, emails, payment data) to Groq unless explicitly required and approved; prefer retrieving booking facts via internal APIs and passing only minimal context to the LLM.
+
+## API & Integration
+- Version APIs if breaking changes are expected (`/api/v1/...`).
+- Paginate list endpoints (bookings, hotels, guests).
+- Support filtering by date range, status, and hotel where relevant.
+- Use ISO 8601 for dates/times in JSON; store dates in UTC where applicable.
+
+## Infrastructure
+- Use multi-stage Docker builds for the Java backend to keep images small.
+- Separate configs for dev, staging, and production via environment variables.
+- Do not commit `.env` files or secrets to version control.
+- Required RAG-related env vars: `GROQ_API_KEY`, embedding model config, and vector store connection settings.

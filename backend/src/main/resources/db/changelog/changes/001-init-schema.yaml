@@ -1,0 +1,827 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-init-schema
+      author: booka
+      changes:
+        - createTable:
+            tableName: hotels
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: address
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: country
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amenities
+                  type: TEXT
+              - column:
+                  name: cancellation_policy
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: password_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: users
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_users_hotel
+
+        - createTable:
+            tableName: room_types
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: max_occupancy
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: base_rate
+                  type: "DECIMAL(10,2)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amenities
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: room_types
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_room_types_hotel
+
+        - createTable:
+            tableName: rooms
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: room_type_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: room_number
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: rooms
+            baseColumnNames: room_type_id
+            referencedTableName: room_types
+            referencedColumnNames: id
+            constraintName: fk_rooms_room_type
+
+        - addUniqueConstraint:
+            tableName: rooms
+            columnNames: room_type_id, room_number
+            constraintName: uq_rooms_type_number
+
+        - createTable:
+            tableName: guests
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: VARCHAR(50)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: bookings
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: room_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: guest_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: check_in_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: check_out_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: num_guests
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_price
+                  type: "DECIMAL(10,2)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: bookings
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_bookings_hotel
+
+        - addForeignKeyConstraint:
+            baseTableName: bookings
+            baseColumnNames: room_id
+            referencedTableName: rooms
+            referencedColumnNames: id
+            constraintName: fk_bookings_room
+
+        - addForeignKeyConstraint:
+            baseTableName: bookings
+            baseColumnNames: guest_id
+            referencedTableName: guests
+            referencedColumnNames: id
+            constraintName: fk_bookings_guest
+
+        - createTable:
+            tableName: rag_documents
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: audience
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+              - column:
+                  name: source_type
+                  type: VARCHAR(50)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: rag_documents
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_rag_documents_hotel
+
+        - createTable:
+            tableName: rag_chunks
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: document_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: section
+                  type: VARCHAR(255)
+              - column:
+                  name: audience
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+              - column:
+                  name: embedding
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: rag_chunks
+            baseColumnNames: document_id
+            referencedTableName: rag_documents
+            referencedColumnNames: id
+            constraintName: fk_rag_chunks_document
+            onDelete: CASCADE
+
+        - createIndex:
+            tableName: rag_chunks
+            indexName: idx_rag_chunks_audience
+            columns:
+              - column:
+                  name: audience
+
+        - createIndex:
+            tableName: rag_chunks
+            indexName: idx_rag_chunks_hotel_id
+            columns:
+              - column:
+                  name: hotel_id
+
+  - changeSet:
+      id: 002-seed-data
+      author: booka
+      changes:
+        - insert:
+            tableName: hotels
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: name
+                  value: "Booka Grand Hotel"
+              - column:
+                  name: description
+                  value: "A luxury hotel in the heart of the city with modern amenities and exceptional service."
+              - column:
+                  name: address
+                  value: "123 Main Street"
+              - column:
+                  name: city
+                  value: "Yangon"
+              - column:
+                  name: country
+                  value: "Myanmar"
+              - column:
+                  name: amenities
+                  value: "WiFi, Pool, Gym, Restaurant, Spa, Parking"
+              - column:
+                  name: cancellation_policy
+                  value: "Free cancellation up to 48 hours before check-in. Cancellations within 48 hours incur a one-night charge."
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: email
+                  value: "admin@booka.com"
+              - column:
+                  name: password_hash
+                  value: '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+              - column:
+                  name: full_name
+                  value: "Hotel Admin"
+              - column:
+                  name: role
+                  value: "ADMIN"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: email
+                  value: "staff@booka.com"
+              - column:
+                  name: password_hash
+                  value: '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+              - column:
+                  name: full_name
+                  value: "Front Desk Staff"
+              - column:
+                  name: role
+                  value: "STAFF"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: room_types
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: name
+                  value: "Standard"
+              - column:
+                  name: description
+                  value: "Comfortable room with city view"
+              - column:
+                  name: max_occupancy
+                  valueNumeric: 2
+              - column:
+                  name: base_rate
+                  valueNumeric: 89.00
+              - column:
+                  name: amenities
+                  value: "WiFi, TV, Air Conditioning"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: room_types
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: name
+                  value: "Deluxe"
+              - column:
+                  name: description
+                  value: "Spacious room with premium amenities"
+              - column:
+                  name: max_occupancy
+                  valueNumeric: 3
+              - column:
+                  name: base_rate
+                  valueNumeric: 149.00
+              - column:
+                  name: amenities
+                  value: "WiFi, TV, Mini Bar, City View, Bathrobe"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rooms
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: room_type_id
+                  valueNumeric: 1
+              - column:
+                  name: room_number
+                  value: "101"
+              - column:
+                  name: status
+                  value: "AVAILABLE"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rooms
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: room_type_id
+                  valueNumeric: 1
+              - column:
+                  name: room_number
+                  value: "102"
+              - column:
+                  name: status
+                  value: "AVAILABLE"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rooms
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 3
+              - column:
+                  name: room_type_id
+                  valueNumeric: 2
+              - column:
+                  name: room_number
+                  value: "201"
+              - column:
+                  name: status
+                  value: "AVAILABLE"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rag_documents
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: "Guest FAQ - Booka Grand Hotel"
+              - column:
+                  name: audience
+                  value: "PUBLIC"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: source_type
+                  value: "FAQ"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rag_documents
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: title
+                  value: "Staff SOP - Check-in Procedures"
+              - column:
+                  name: audience
+                  value: "STAFF"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: source_type
+                  value: "SOP"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rag_chunks
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: document_id
+                  valueNumeric: 1
+              - column:
+                  name: content
+                  value: "Check-in time is 2:00 PM and check-out time is 11:00 AM. Early check-in may be available upon request subject to room availability."
+              - column:
+                  name: section
+                  value: "Check-in / Check-out"
+              - column:
+                  name: audience
+                  value: "PUBLIC"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rag_chunks
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: document_id
+                  valueNumeric: 1
+              - column:
+                  name: content
+                  value: "Free cancellation is available up to 48 hours before your scheduled check-in. Cancellations within 48 hours will be charged one night's stay."
+              - column:
+                  name: section
+                  value: "Cancellation Policy"
+              - column:
+                  name: audience
+                  value: "PUBLIC"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rag_chunks
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 3
+              - column:
+                  name: document_id
+                  valueNumeric: 1
+              - column:
+                  name: content
+                  value: "Hotel amenities include complimentary WiFi, swimming pool (6 AM - 10 PM), fitness center, on-site restaurant, spa services, and free parking for guests."
+              - column:
+                  name: section
+                  value: "Amenities"
+              - column:
+                  name: audience
+                  value: "PUBLIC"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rag_chunks
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 4
+              - column:
+                  name: document_id
+                  valueNumeric: 2
+              - column:
+                  name: content
+                  value: "Staff check-in procedure: 1) Verify guest identity with photo ID. 2) Confirm booking in the system. 3) Collect payment or verify pre-payment. 4) Issue room key and explain amenities. 5) Update booking status to CHECKED_IN."
+              - column:
+                  name: section
+                  value: "Check-in SOP"
+              - column:
+                  name: audience
+                  value: "STAFF"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: rag_chunks
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 5
+              - column:
+                  name: document_id
+                  valueNumeric: 2
+              - column:
+                  name: content
+                  value: "For no-show guests, wait until 6 PM on the arrival date before marking the booking as cancelled. Charge the first night per the cancellation policy unless the guest has contacted the front desk."
+              - column:
+                  name: section
+                  value: "No-Show Policy"
+              - column:
+                  name: audience
+                  value: "STAFF"
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP

@@ -1,0 +1,128 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-blackout-dates
+      author: booka
+      changes:
+        - createTable:
+            tableName: blackout_dates
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: room_type_id
+                  type: BIGINT
+              - column:
+                  name: start_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: blackout_dates
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_blackout_dates_hotel
+
+        - addForeignKeyConstraint:
+            baseTableName: blackout_dates
+            baseColumnNames: room_type_id
+            referencedTableName: room_types
+            referencedColumnNames: id
+            constraintName: fk_blackout_dates_room_type
+
+        - createIndex:
+            tableName: blackout_dates
+            indexName: idx_blackout_dates_hotel_dates
+            columns:
+              - column:
+                  name: hotel_id
+              - column:
+                  name: start_date
+              - column:
+                  name: end_date
+
+  - changeSet:
+      id: 003-blackout-seed
+      author: booka
+      changes:
+        - insert:
+            tableName: blackout_dates
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: start_date
+                  valueDate: "2026-12-24"
+              - column:
+                  name: end_date
+                  valueDate: "2026-12-26"
+              - column:
+                  name: reason
+                  value: "Christmas holiday — property closed to new bookings"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: blackout_dates
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: hotel_id
+                  valueNumeric: 1
+              - column:
+                  name: room_type_id
+                  valueNumeric: 2
+              - column:
+                  name: start_date
+                  valueDate: "2026-09-01"
+              - column:
+                  name: end_date
+                  valueDate: "2026-09-08"
+              - column:
+                  name: reason
+                  value: "Deluxe wing renovation"
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP

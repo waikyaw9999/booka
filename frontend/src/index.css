@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Syne", sans-serif;
+  --font-body: "Manrope", sans-serif;
+  --color-ink: #10201b;
+  --color-forest: #1a3c34;
+  --color-moss: #2f6b5a;
+  --color-lagoon: #3d8b7a;
+  --color-sand: #e7e1d6;
+  --color-fog: #f4f1ea;
+  --color-mist: #faf8f4;
+  --color-gold: #b8956c;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply antialiased text-ink;
+    font-family: var(--font-body);
+    background-color: var(--color-mist);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(61, 139, 122, 0.12), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(184, 149, 108, 0.1), transparent),
+      linear-gradient(180deg, #faf8f4 0%, #f0ebe3 100%);
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .text-ink {
+    color: var(--color-ink);
+  }
+  .bg-ink {
+    background-color: var(--color-ink);
+  }
+  .bg-forest {
+    background-color: var(--color-forest);
+  }
+  .bg-moss {
+    background-color: var(--color-moss);
+  }
+  .bg-lagoon {
+    background-color: var(--color-lagoon);
+  }
+  .bg-sand {
+    background-color: var(--color-sand);
+  }
+  .bg-fog {
+    background-color: var(--color-fog);
+  }
+  .text-forest {
+    color: var(--color-forest);
+  }
+  .text-moss {
+    color: var(--color-moss);
+  }
+  .text-lagoon {
+    color: var(--color-lagoon);
+  }
+  .text-gold {
+    color: var(--color-gold);
+  }
+  .border-sand {
+    border-color: var(--color-sand);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.08) translate3d(-1.5%, 1%, 0);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-rise-delay {
+  animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+.animate-rise-delay-2 {
+  animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+.animate-fade {
+  animation: fade-in 1s ease both;
+}
+
+.hero-media {
+  animation: drift 18s ease-in-out infinite alternate;
+}
+
+.input-field {
+  @apply w-full rounded-xl border border-sand bg-white/80 px-3 py-2.5 text-sm text-ink outline-none transition;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.input-field:focus {
+  border-color: var(--color-lagoon);
+  box-shadow: 0 0 0 3px rgba(61, 139, 122, 0.18);
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition;
+  background: linear-gradient(135deg, var(--color-moss), var(--color-forest));
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  transform: none;
+  filter: none;
+}
+
+.surface {
+  @apply rounded-2xl border border-sand/80 bg-white/70 backdrop-blur-sm;
+}

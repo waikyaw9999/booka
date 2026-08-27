@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: booka-backend
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:booka;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+    driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+server:
+  port: 8080
+
+booka:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  groq:
+    api-key: ${GROQ_API_KEY:}
+    base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+    model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+  rag:
+    top-k: ${RAG_TOP_K:5}
+    similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.15}
+    public-rate-limit-per-minute: ${RAG_PUBLIC_RATE_LIMIT:20}
+    staff-rate-limit-per-minute: ${RAG_STAFF_RATE_LIMIT:60}
+
+logging:
+  level:
+    com.booka: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/booka}
+    username: ${DATABASE_USERNAME:booka}
+    password: ${DATABASE_PASSWORD:booka_secret}
+    driver-class-name: org.postgresql.Driver
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:booka_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+  liquibase:
+    contexts: test
