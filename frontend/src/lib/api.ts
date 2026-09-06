@@ -7,6 +7,14 @@ import type {
   RagChatResponse,
   BlackoutDate,
   RoomType,
+  RoomBoardItem,
+  MaintenanceTicket,
+  Folio,
+  CheckoutSession,
+  HousekeepingStatus,
+  TicketPriority,
+  TicketStatus,
+  FolioLineType,
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -76,12 +84,28 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  getBooking: (id: number) => request<Booking>(`/api/v1/bookings/${id}`),
+
+  getBookingFolio: (id: number) => request<Folio>(`/api/v1/bookings/${id}/folio`),
+
+  createCheckoutSession: (bookingId: number) =>
+    request<CheckoutSession>(`/api/v1/bookings/${bookingId}/checkout-session`, {
+      method: 'POST',
+    }),
+
   getDashboard: (token: string) =>
     request<DashboardStats>('/api/v1/admin/dashboard', {}, token),
 
   listBookings: (token: string, page = 0) =>
     request<PageResponse<Booking>>(
       `/api/v1/admin/bookings?page=${page}&size=20`,
+      {},
+      token,
+    ),
+
+  getBookingByCode: (token: string, code: string) =>
+    request<Booking>(
+      `/api/v1/admin/bookings/by-code/${encodeURIComponent(code.trim())}`,
       {},
       token,
     ),
@@ -93,13 +117,116 @@ export const api = {
       token,
     ),
 
+  checkInBooking: (token: string, id: number, force = false) =>
+    request<Booking>(
+      `/api/v1/admin/bookings/${id}/check-in`,
+      { method: 'POST', body: JSON.stringify({ force }) },
+      token,
+    ),
+
+  checkOutBooking: (token: string, id: number) =>
+    request<Booking>(`/api/v1/admin/bookings/${id}/check-out`, { method: 'POST' }, token),
+
+  assignRoom: (token: string, bookingId: number, roomId: number) =>
+    request<Booking>(
+      `/api/v1/admin/bookings/${bookingId}/assign-room`,
+      { method: 'POST', body: JSON.stringify({ roomId }) },
+      token,
+    ),
+
+  createWalkIn: (
+    token: string,
+    body: {
+      hotelId: number;
+      roomTypeId: number;
+      roomId?: number | null;
+      checkInDate: string;
+      checkOutDate: string;
+      numGuests: number;
+      guestEmail: string;
+      guestFullName: string;
+      guestPhone?: string;
+    },
+  ) =>
+    request<Booking>(
+      '/api/v1/admin/reservations/walk-in',
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
+  listRoomBoard: (token: string) =>
+    request<RoomBoardItem[]>('/api/v1/admin/rooms', {}, token),
+
+  updateHousekeeping: (
+    token: string,
+    roomId: number,
+    housekeepingStatus: HousekeepingStatus,
+    force = false,
+  ) =>
+    request<RoomBoardItem>(
+      `/api/v1/admin/rooms/${roomId}/housekeeping`,
+      { method: 'PATCH', body: JSON.stringify({ housekeepingStatus, force }) },
+      token,
+    ),
+
+  listMaintenanceTickets: (token: string) =>
+    request<MaintenanceTicket[]>('/api/v1/admin/maintenance-tickets', {}, token),
+
+  createMaintenanceTicket: (
+    token: string,
+    body: {
+      hotelId: number;
+      roomId: number;
+      title: string;
+      description?: string;
+      priority: TicketPriority;
+      reportedBy?: string;
+      markRoomOutOfOrder?: boolean;
+    },
+  ) =>
+    request<MaintenanceTicket>(
+      '/api/v1/admin/maintenance-tickets',
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
+  updateMaintenanceTicket: (
+    token: string,
+    id: number,
+    body: { status?: TicketStatus; priority?: TicketPriority; description?: string },
+  ) =>
+    request<MaintenanceTicket>(
+      `/api/v1/admin/maintenance-tickets/${id}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+      token,
+    ),
+
+  getAdminFolio: (token: string, bookingId: number) =>
+    request<Folio>(`/api/v1/admin/folios/${bookingId}`, {}, token),
+
+  postFolioCharge: (
+    token: string,
+    bookingId: number,
+    body: { type: FolioLineType; description: string; amount: number; externalRef?: string },
+  ) =>
+    request<Folio>(
+      `/api/v1/admin/folios/${bookingId}/charges`,
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
   publicRagChat: (message: string, hotelId: number | null, history: { role: string; content: string }[]) =>
     request<RagChatResponse>('/api/v1/rag/public/chat', {
       method: 'POST',
       body: JSON.stringify({ message, hotelId, history }),
     }),
 
-  staffRagChat: (token: string, message: string, hotelId: number | null, history: { role: string; content: string }[]) =>
+  staffRagChat: (
+    token: string,
+    message: string,
+    hotelId: number | null,
+    history: { role: string; content: string }[],
+  ) =>
     request<RagChatResponse>(
       '/api/v1/rag/chat',
       { method: 'POST', body: JSON.stringify({ message, hotelId, history }) },

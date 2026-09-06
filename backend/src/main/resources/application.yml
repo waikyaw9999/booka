@@ -33,6 +33,14 @@ booka:
     similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.15}
     public-rate-limit-per-minute: ${RAG_PUBLIC_RATE_LIMIT:20}
     staff-rate-limit-per-minute: ${RAG_STAFF_RATE_LIMIT:60}
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    success-url: ${STRIPE_SUCCESS_URL:http://localhost:5173/book?payment=success}
+    cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/book?payment=cancelled}
+    currency: ${STRIPE_CURRENCY:usd}
+  channel:
+    api-key: ${CHANNEL_API_KEY:}
 
 logging:
   level:

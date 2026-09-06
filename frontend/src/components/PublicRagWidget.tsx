@@ -41,11 +41,12 @@ export function PublicRagWidget({ hotelId }: PublicRagWidgetProps) {
 
   return (
     <RagChat
-      title="Help Assistant"
+      title="Concierge help"
       messages={publicMessages}
       onSend={handleSend}
       loading={loading}
       ragAvailable={ragAvailable}
+      placeholder="Ask about amenities, rates, or availability…"
     />
   );
 }

@@ -74,4 +74,29 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("checkIn") LocalDate checkIn,
             @Param("checkOut") LocalDate checkOut,
             @Param("excludeId") Long excludeId);
+
+    java.util.Optional<Booking> findByConfirmationCode(String confirmationCode);
+
+    java.util.Optional<Booking> findByChannelAndExternalReservationId(
+            com.booka.domain.enums.ReservationChannel channel,
+            String externalReservationId);
+
+    java.util.Optional<Booking> findByStripeCheckoutSessionId(String stripeCheckoutSessionId);
+
+    @Query("""
+            SELECT b FROM Booking b
+            WHERE b.roomId = :roomId
+            AND b.status = com.booka.domain.enums.BookingStatus.CHECKED_IN
+            """)
+    java.util.Optional<Booking> findCheckedInByRoomId(@Param("roomId") Long roomId);
+
+    @Query("""
+            SELECT b FROM Booking b
+            WHERE b.roomId = :roomId
+            AND b.status IN (
+                com.booka.domain.enums.BookingStatus.CONFIRMED,
+                com.booka.domain.enums.BookingStatus.CHECKED_IN)
+            ORDER BY b.checkInDate ASC
+            """)
+    java.util.List<Booking> findActiveAssignedByRoomId(@Param("roomId") Long roomId);
 }

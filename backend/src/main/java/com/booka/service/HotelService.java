@@ -91,6 +91,7 @@ public class HotelService {
                 .roomTypeId(request.roomTypeId())
                 .roomNumber(request.roomNumber())
                 .status(RoomStatus.AVAILABLE)
+                .housekeepingStatus(com.booka.domain.enums.HousekeepingStatus.CLEAN)
                 .build();
         return toRoomResponse(roomRepository.save(room));
     }

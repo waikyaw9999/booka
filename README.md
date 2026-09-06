@@ -1,22 +1,26 @@
-# Booka — Hotel Booking & Management
+# Booka — Hotel Booking & Property Management
 
-Full-stack hotel booking platform with guest booking flows, staff admin dashboard, and dual-audience RAG assistants powered by Groq (OpenAI-compatible API).
+Full-stack hotel booking platform with guest booking flows, Front Office PMS tools, housekeeping, folios, channel reservation hooks, and dual-audience RAG assistants powered by Groq. Online payments (Stripe Checkout) are deferred — guest bookings confirm without payment for now.
 
 ## Stack
 
 | Layer | Technology |
 |-------|------------|
-| Backend | Java 17, Spring Boot 3, JPA, Liquibase, JWT |
+| Backend | Java 17, Spring Boot 3, JPA, Liquibase, JWT, Stripe Java SDK |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS v4 |
 | State | Zustand (auth, booking draft, chat), TanStack Query |
 | Database | PostgreSQL 16 |
-| AI | Groq (`llama-3.3-70b-versatile`) via OpenAI-compatible API |
+| AI | Groq via OpenAI-compatible API |
+| Payments | Stripe Checkout + webhooks (deferred; guest path skips Checkout) |
 
 ## Features
 
-- **Guests**: browse hotels, check availability, book rooms, AI help assistant (public docs only)
-- **Staff/Admin**: dashboard, booking management, check-in/out status updates, staff RAG assistant (public + internal SOPs), **blackout date management**
-- **RAG**: retrieval with audience filtering (`PUBLIC` / `STAFF`), Groq generation, source citations, rate limiting
+- **Guests**: browse hotels, availability, book rooms (confirmed without online payment for now), AI help assistant
+- **Front Office**: room board, check-in/out, room assignment
+- **Housekeeping & maintenance**: CLEAN / DIRTY / INSPECTING + maintenance tickets
+- **Folios**: room/tax lines, POS F&B charges routed to the guest bill
+- **CRS / channels**: confirmation codes, walk-in reservations, inbound OTA hooks (`X-Channel-Api-Key`)
+- **Staff/Admin**: dashboard, blackout dates, staff RAG (public + SOPs)
 
 ## Quick start (Docker)
 
@@ -25,9 +29,12 @@ Full-stack hotel booking platform with guest booking flows, staff admin dashboar
    cp .env.example .env
    ```
 
-2. Add your Groq API key to `.env`:
+2. Add keys to `.env` as needed:
    ```
    GROQ_API_KEY=gsk_...
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   CHANNEL_API_KEY=dev-channel-key
    ```
 
 3. Start all services:
@@ -38,6 +45,8 @@ Full-stack hotel booking platform with guest booking flows, staff admin dashboar
 4. Open:
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:8080
+
+For local Stripe webhooks: `stripe listen --forward-to localhost:8080/api/v1/payments/stripe/webhook`
 
 ## Demo credentials
 
@@ -52,11 +61,8 @@ Full-stack hotel booking platform with guest booking flows, staff admin dashboar
 
 ```bash
 cd backend
-# Start PostgreSQL (or use docker compose up postgres)
 mvn spring-boot:run
 ```
-
-Default dev profile connects to `jdbc:postgresql://localhost:5432/booka`.
 
 ### Frontend
 
@@ -66,27 +72,24 @@ npm install
 npm run dev
 ```
 
-Vite proxies `/api` to `http://localhost:8080`.
-
 ## API overview
 
 | Endpoint | Access | Description |
 |----------|--------|-------------|
 | `GET /api/v1/hotels` | Public | List hotels |
 | `POST /api/v1/hotels/{id}/availability` | Public | Check room availability |
-| `POST /api/v1/bookings` | Public | Create booking |
-| `GET /api/v1/hotels/{id}/blackout-dates` | Public | List blackout periods (guest date hints) |
-| `POST /api/v1/rag/public/chat` | Public | Guest RAG assistant |
-| `POST /api/v1/rag/chat` | Staff | Staff RAG assistant |
-| `GET /api/v1/admin/dashboard` | Staff | Dashboard stats |
-| `GET /api/v1/admin/bookings` | Staff | List bookings |
-| `GET/POST/DELETE /api/v1/admin/blackout-dates` | Staff | Manage blackout dates |
-
-## RAG notes
-
-- Groq does not provide embeddings; the backend uses a local semantic+keyword scoring approach with optional stored embeddings.
-- Without `GROQ_API_KEY`, the assistant falls back to retrieved document excerpts.
-- Staff users can access both `PUBLIC` and `STAFF` knowledge; guests only see `PUBLIC` content.
+| `POST /api/v1/bookings` | Public | Create confirmed direct booking + folio (`N_A` payment) |
+| `POST /api/v1/bookings/{id}/checkout-session` | Public | Start Stripe Checkout (unused by guest UI; for later) |
+| `POST /api/v1/payments/stripe/webhook` | Stripe | Confirm payment / booking (when Checkout enabled) |
+| `POST /api/v1/channels/{channel}/reservations` | Channel key | Idempotent OTA upsert |
+| `GET /api/v1/admin/rooms` | Staff | Front Office room board |
+| `POST /api/v1/admin/bookings/{id}/check-in\|check-out\|assign-room` | Staff | FO actions |
+| `PATCH /api/v1/admin/rooms/{id}/housekeeping` | Staff | Housekeeping status |
+| `GET/POST/PATCH /api/v1/admin/maintenance-tickets` | Staff | Maintenance tickets |
+| `GET/POST /api/v1/admin/folios/{bookingId}[/charges]` | Staff | Folio + POS charges |
+| `GET/POST/DELETE /api/v1/admin/blackout-dates` | Staff | Blackout dates |
+| `POST /api/v1/rag/public/chat` | Public | Guest RAG |
+| `POST /api/v1/rag/chat` | Staff | Staff RAG |
 
 ## Project structure
 

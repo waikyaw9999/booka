@@ -1,35 +1,38 @@
 # Cursor AI Rules for Hotel Booking and Management App (Booka)
 
 ## Project Overview
-Booka is a full-stack hotel booking and management platform with two primary audiences:
-- **Guests** — search hotels, view availability, book rooms, manage reservations, and use a RAG-powered help assistant for hotel FAQs and booking guidance.
-- **Hotel staff / admins** — manage properties, room inventory, pricing, bookings, check-in/check-out, and use a staff-only RAG assistant for internal SOPs and operational docs.
+Booka is a full-stack hotel booking and property management platform with two primary audiences:
+- **Guests** — search hotels, view availability, book rooms (Stripe Checkout optional/deferred for direct bookings), manage reservations, and use a RAG-powered help assistant for hotel FAQs and booking guidance.
+- **Hotel staff / admins** — Front Office (room board, check-in/out, assignment), CRS reservations, housekeeping, maintenance tickets, folios/POS charges, blackout dates, and a staff-only RAG assistant for SOPs and operational docs.
 
-Always align code and naming with this domain (hotels, rooms, room types, bookings, guests, availability, rates).
+Always align code and naming with this domain (hotels, rooms, room types, bookings, guests, availability, rates, folios, housekeeping).
 
 ## Global Rules
 - Prioritize clean, readable, and modular code.
 - Write brief, descriptive commit messages.
 - Never hardcode sensitive credentials; use environment variables (`.env`).
-- Use consistent naming across backend and frontend (e.g. `Booking`, `RoomType`, `checkInDate`).
+- Use consistent naming across backend and frontend (e.g. `Booking`, `RoomType`, `checkInDate`, `housekeepingStatus`).
 - Validate business rules at the Service layer, not only in controllers or UI.
 
 ## Domain Concepts
 - **Hotel** — a property with address, amenities, policies, and room inventory.
 - **Room Type** — category of room (e.g. Standard, Deluxe); defines capacity, base rate, and amenities.
-- **Room** — physical unit belonging to a room type; may have a room number and status (available, occupied, maintenance).
-- **Booking / Reservation** — guest stay for a date range; links guest, room type or room, and pricing.
+- **Room** — physical unit belonging to a room type; has inventory `status` (available, occupied, maintenance) and separate `housekeepingStatus` (clean, dirty, inspecting).
+- **Booking / Reservation** — guest stay for a date range; links guest, room type and optionally assigned room; has confirmation code, channel, and payment status.
 - **Guest** — person making or associated with a booking.
 - **Availability** — rooms or room types available for a given check-in/check-out range.
 - **Rate / Pricing** — nightly or seasonal pricing; may vary by room type and date.
 - **Blackout Date** — a date range when booking is blocked for a hotel (property-wide) or a specific room type (e.g. maintenance, private events, holidays).
+- **Folio** — guest bill for a booking; holds line items (room, tax, POS/F&B, payments, adjustments).
+- **Maintenance Ticket** — work order against a room (priority + workflow status).
+- **Channel** — reservation source: `DIRECT`, `WALK_IN`, `OTA`, `CHANNEL_MANAGER`.
 
 ## Backend (Java / Spring Boot)
 - Use Java 17+ features (Records for DTOs, pattern matching, text blocks where appropriate).
 - Architecture: strictly follow Controller → Service → Repository.
 - Never expose JPA entities in REST controllers; map to/from DTOs in the Service layer.
-- Follow RESTful conventions (`/api/hotels`, `/api/bookings`, `/api/rooms`, etc.).
-- Use Liquibase or Flyway for migrations; do not rely on `hibernate.hbm2ddl.auto=update` in production.
+- Follow RESTful conventions (`/api/v1/hotels`, `/api/v1/bookings`, `/api/v1/admin/...`, etc.).
+- Use Liquibase for migrations; do not rely on `hibernate.hbm2ddl.auto=update` in production.
 - Use Lombok (`@Data`, `@Builder`, `@Slf4j`) to reduce boilerplate.
 - Enforce booking invariants in services:
   - Check-in date must be before check-out date.
@@ -37,8 +40,48 @@ Always align code and naming with this domain (hotels, rooms, room types, bookin
   - Respect max occupancy per room type.
   - Handle cancellation policies and booking status transitions (pending → confirmed → checked-in → checked-out / cancelled).
   - Reject bookings and availability that overlap **blackout dates** (hotel-wide or room-type scoped).
-- Use transactions for multi-step operations (create booking + update availability).
-- Return meaningful HTTP status codes and structured error responses for validation and conflict cases (e.g. room unavailable, dates blacked out).
+- Use transactions for multi-step operations (create booking + open folio; check-out + dirty room).
+- Return meaningful HTTP status codes and structured error responses for validation and conflict cases (e.g. room unavailable, dates blacked out, unclean room on check-in).
+
+## Front Office & Property Management
+- Expose a real-time **room board** for staff: room number, type, floor, inventory status, housekeeping status, and current guest/booking when occupied.
+- Dedicated check-in / check-out / assign-room endpoints under `/api/v1/admin/bookings/{id}/...`.
+- Check-in requires `CONFIRMED` booking, assigned `roomId`, and housekeeping `CLEAN` (staff may pass `force=true` to override).
+- Check-in sets booking `CHECKED_IN` and room inventory `OCCUPIED`.
+- Check-out sets booking `CHECKED_OUT`, room inventory `AVAILABLE`, and housekeeping `DIRTY`.
+- Room assignment / reassignment must use the booking’s `roomTypeId`, block overlapping stays, and allow deferred assignment (`roomId` nullable until assigned).
+- Keep inventory `RoomStatus` separate from `HousekeepingStatus` — do not conflate sellability with cleanliness.
+
+## Reservations (CRS) & Channel Hooks
+- Every reservation gets a unique `confirmationCode` (e.g. `BK-…`).
+- Persist `channel`, optional `externalReservationId`, `roomTypeId`, and `paymentStatus` on bookings.
+- Direct web bookings (current): create as `CONFIRMED` + `paymentStatus=N_A`, open folio; no Stripe redirect. Stripe Checkout is deferred — keep `PaymentService` / webhook / checkout-session endpoint for later (`PENDING` + `UNPAID` → Checkout → webhook confirm).
+- Walk-in: staff endpoint creates `CONFIRMED` with `paymentStatus=N_A` (or paid at desk) without Stripe.
+- Inbound OTA / channel manager hooks: `POST /api/v1/channels/{channel}/reservations` authenticated with `X-Channel-Api-Key`.
+- Channel upserts are **idempotent** on `(channel, externalReservationId)`; OTA bookings use `paymentStatus=N_A`.
+- Do not implement a full two-way channel manager unless explicitly requested — provide inbound hooks and stable APIs only.
+
+## Housekeeping & Maintenance
+- Housekeeping statuses: `CLEAN`, `DIRTY`, `INSPECTING`.
+- Typical flow after checkout: `DIRTY` → `INSPECTING` → `CLEAN`.
+- Promoting to `CLEAN` normally requires prior `INSPECTING` (staff `force` may override).
+- Maintenance tickets: hotel + room scoped; statuses `OPEN` / `IN_PROGRESS` / `RESOLVED` / `CANCELLED`; priorities `LOW` / `MEDIUM` / `HIGH` / `URGENT`.
+- Creating a ticket with `markRoomOutOfOrder=true` sets room inventory `MAINTENANCE` (blocks availability); resolving may restore `AVAILABLE` when appropriate.
+- Admin endpoints under `/api/v1/admin/rooms/{id}/housekeeping` and `/api/v1/admin/maintenance-tickets`.
+
+## Billing, Folios & Stripe
+- Each booking has one folio (`OPEN` / `CLOSED`) with line items: `ROOM`, `TAX`, `POS_FB`, `PAYMENT`, `ADJUSTMENT`.
+- On booking create, post `ROOM` + server-side `TAX` (default 10%) line items.
+- Staff can post POS/F&B charges to a folio (`POST /api/v1/admin/folios/{bookingId}/charges`) using `externalRef` for POS idempotency.
+- Stripe is **optional / deferred** for guest direct bookings today; guest UI confirms without Checkout. Keep Stripe config, `PaymentService`, and webhook unused on that path until re-enabled.
+- When enabling Stripe later: Checkout Sessions (`mode=payment`) via backend; never put Stripe secret keys in the frontend.
+- Omit `payment_method_types` on Checkout Session create (use Dashboard dynamic payment methods).
+- Use `StripeClient` instance APIs (not deprecated global `Stripe.apiKey`).
+- Fulfillment **must** run in the webhook handler for `checkout.session.completed` and `checkout.session.async_payment_succeeded`, only when `payment_status` is not `unpaid`; verify signatures with `STRIPE_WEBHOOK_SECRET`.
+- Do not treat the success URL as fulfillment — show “confirming payment” and poll booking status if needed.
+- On successful payment: set `paymentStatus=PAID`, booking `CONFIRMED`, post a `PAYMENT` folio line.
+- Empty `STRIPE_SECRET_KEY` means unconfigured; Checkout endpoint should fail clearly until keys are set.
+- Env vars: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`, optional `CHANNEL_API_KEY`.
 
 ## Blackout Date Management
 - Blackout dates block new bookings for a hotel and/or specific room type over a date range.
@@ -61,8 +104,12 @@ Always align code and naming with this domain (hotels, rooms, room types, bookin
   - Date-range picker for check-in/check-out with clear validation feedback.
   - Show real-time or fetched availability before confirming a booking.
   - Display pricing breakdown (nightly rate, taxes, total) before payment or confirmation.
+  - Direct bookings: create reservation and show confirmation code (Stripe Checkout deferred; no redirect).
 - Admin UX:
   - Dashboard views for occupancy, upcoming check-ins/check-outs, and booking status.
+  - Front Office room board with check-in, check-out, and room assignment actions.
+  - Housekeeping board and maintenance ticket list/create/update.
+  - Folio view with ability to post POS/F&B charges.
   - CRUD flows for hotels, room types, rooms, rate management, and **blackout dates**.
   - Blackout management UI: date-range picker, optional room-type scope, reason/note, list with delete action.
 - Preserve in-progress booking state across navigation (e.g. dates, selected room) until submitted or cleared.
@@ -138,3 +185,4 @@ Prompting requirements:
 - Separate configs for dev, staging, and production via environment variables.
 - Do not commit `.env` files or secrets to version control.
 - Required RAG-related env vars: `GROQ_API_KEY`, embedding model config, and vector store connection settings.
+- Required payment/CRS env vars when enabling those features: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`, `CHANNEL_API_KEY`.

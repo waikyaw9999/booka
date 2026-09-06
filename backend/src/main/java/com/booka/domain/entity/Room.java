@@ -1,5 +1,6 @@
 package com.booka.domain.entity;
 
+import com.booka.domain.enums.HousekeepingStatus;
 import com.booka.domain.enums.RoomStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,6 +31,16 @@ public class Room {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RoomStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "housekeeping_status", nullable = false)
+    @Builder.Default
+    private HousekeepingStatus housekeepingStatus = HousekeepingStatus.CLEAN;
+
+    private Integer floor;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

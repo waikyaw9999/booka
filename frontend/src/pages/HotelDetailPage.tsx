@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useBookingStore } from '../stores';
 import { PublicRagWidget } from '../components/PublicRagWidget';
 import { BlackoutNotice } from '../components/BlackoutNotice';
+import { EmptyState, InlineAlert } from '../components/ui';
 
 export function HotelDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -60,10 +61,14 @@ export function HotelDetailPage() {
   }
 
   if (isLoading) {
-    return <p className="py-24 text-center text-ink/50">Loading stay...</p>;
+    return <p className="py-24 text-center text-ink/50">Loading stay…</p>;
   }
   if (!hotel) {
-    return <p className="py-24 text-center text-red-700">Hotel not found</p>;
+    return (
+      <div className="mx-auto max-w-lg px-4 py-24">
+        <EmptyState title="Hotel not found" description="This property may have been removed." />
+      </div>
+    );
   }
 
   return (
@@ -116,9 +121,7 @@ export function HotelDetailPage() {
             className="surface mt-4 grid items-end gap-4 p-5 md:grid-cols-4"
           >
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink/55">
-                Check-in
-              </label>
+              <label className="label-caps">Check-in</label>
               <input
                 type="date"
                 required
@@ -128,9 +131,7 @@ export function HotelDetailPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink/55">
-                Check-out
-              </label>
+              <label className="label-caps">Check-out</label>
               <input
                 type="date"
                 required
@@ -140,9 +141,7 @@ export function HotelDetailPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink/55">
-                Guests
-              </label>
+              <label className="label-caps">Guests</label>
               <input
                 type="number"
                 min={1}
@@ -153,51 +152,67 @@ export function HotelDetailPage() {
               />
             </div>
             <button type="submit" disabled={searching} className="btn-primary w-full">
-              {searching ? 'Searching...' : 'Check dates'}
+              {searching ? 'Searching…' : 'Check dates'}
             </button>
           </form>
-          {searchError && <p className="mt-3 text-sm text-red-700">{searchError}</p>}
+          {searchError && (
+            <div className="mt-3">
+              <InlineAlert tone="error">{searchError}</InlineAlert>
+            </div>
+          )}
         </section>
 
         {availability && (
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold text-ink">Available rooms</h2>
-            {availability.length === 0 ? (
-              <p className="text-ink/60">
-                No rooms available for these dates. They may overlap a blackout period or existing bookings.
+          <section className="space-y-4 animate-tab">
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="font-display text-2xl font-bold text-ink">Select a rate</h2>
+              <p className="text-xs text-ink/45">
+                {checkIn} → {checkOut} · {numGuests} guest{numGuests === 1 ? '' : 's'}
               </p>
+            </div>
+            {availability.length === 0 ? (
+              <EmptyState
+                title="No rooms for these dates"
+                description="Dates may overlap a blackout period or existing bookings. Try another range."
+              />
             ) : (
-              availability.map((item) => (
-                <div
-                  key={item.roomType.id}
-                  className="surface flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center"
-                >
-                  <div>
-                    <h3 className="font-display text-xl font-semibold text-ink">
-                      {item.roomType.name}
-                    </h3>
-                    <p className="mt-1 text-sm text-ink/65">{item.roomType.description}</p>
-                    <p className="mt-2 text-xs font-medium uppercase tracking-wide text-moss">
-                      {item.availableCount} room(s) · {item.nights} night(s)
-                    </p>
-                  </div>
-                  <div className="md:text-right space-y-2">
-                    <p className="font-display text-2xl font-bold text-forest">
-                      ${item.totalPrice.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-ink/50">
-                      ${item.nightlyRate.toFixed(2)}/night before tax
-                    </p>
-                    <Link
-                      to="/book"
-                      onClick={() => selectRoom(item)}
-                      className="btn-primary inline-flex"
-                    >
-                      Book now
-                    </Link>
-                  </div>
-                </div>
-              ))
+              <ul className="divide-y divide-sand/80 overflow-hidden rounded-2xl border border-sand/80 bg-white/70">
+                {availability.map((item) => (
+                  <li
+                    key={item.roomType.id}
+                    className="flex flex-col gap-4 p-5 transition hover:bg-fog/50 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display text-xl font-semibold text-ink">
+                        {item.roomType.name}
+                      </h3>
+                      <p className="mt-1 text-sm text-ink/65">{item.roomType.description}</p>
+                      <p className="mt-2 text-xs font-medium uppercase tracking-wide text-moss">
+                        {item.availableCount} available · {item.nights} night
+                        {item.nights === 1 ? '' : 's'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-5 md:flex-col md:items-end md:gap-2">
+                      <div className="md:text-right">
+                        <p className="text-xs uppercase tracking-wide text-ink/45">Total stay</p>
+                        <p className="font-display text-2xl font-bold text-forest">
+                          ${item.totalPrice.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-ink/50">
+                          ${item.nightlyRate.toFixed(2)} / night
+                        </p>
+                      </div>
+                      <Link
+                        to="/book"
+                        onClick={() => selectRoom(item)}
+                        className="btn-primary inline-flex"
+                      >
+                        Book
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
         )}

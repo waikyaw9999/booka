@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { HotelCard } from '../components/HotelCard';
 import { PublicRagWidget } from '../components/PublicRagWidget';
+import { EmptyState, InlineAlert } from '../components/ui';
 
 export function HomePage() {
   const { data: hotels, isLoading, error } = useQuery({
@@ -39,18 +40,35 @@ export function HomePage() {
       </section>
 
       <section id="stays" className="mx-auto max-w-6xl px-4 py-16 space-y-10">
-        <div className="max-w-2xl">
-          <h2 className="font-display text-3xl font-bold text-ink sm:text-4xl">Featured stays</h2>
-          <p className="mt-3 text-ink/65">
-            Handpicked properties with transparent rates and clear cancellation policies.
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-moss">
+              Property discovery
+            </p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-ink sm:text-4xl">
+              Featured stays
+            </h2>
+            <p className="mt-3 text-ink/65">
+              Handpicked properties with transparent rates and clear cancellation policies.
+            </p>
+          </div>
+          <p className="max-w-xs text-sm text-ink/50 sm:text-right">
+            Live inventory · Secure checkout · Concierge help on every page
           </p>
         </div>
 
-        {isLoading && <p className="text-ink/50">Loading stays...</p>}
+        {isLoading && <p className="text-ink/50">Loading stays…</p>}
         {error && (
-          <p className="text-red-700">
+          <InlineAlert tone="error">
             Could not load hotels. Make sure the backend is running on port 8080.
-          </p>
+          </InlineAlert>
+        )}
+
+        {!isLoading && !error && hotels?.length === 0 && (
+          <EmptyState
+            title="No properties yet"
+            description="Check back soon — new stays are being prepared."
+          />
         )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -60,14 +78,20 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-20">
-        <div className="mb-6 max-w-xl">
-          <h2 className="font-display text-3xl font-bold text-ink">Need a hand?</h2>
-          <p className="mt-2 text-ink/65">
-            Ask about amenities, policies, room types, or month availability — answers use live data across all properties.
-          </p>
+      <section className="border-t border-sand/80 bg-gradient-to-b from-fog/40 to-transparent">
+        <div className="mx-auto max-w-6xl px-4 py-16">
+          <div className="mb-6 max-w-xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
+              Concierge
+            </p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-ink">Need a hand?</h2>
+            <p className="mt-2 text-ink/65">
+              Ask about amenities, policies, room types, or month availability — answers use live
+              data across all properties.
+            </p>
+          </div>
+          <PublicRagWidget hotelId={null} />
         </div>
-        <PublicRagWidget hotelId={null} />
       </section>
     </div>
   );

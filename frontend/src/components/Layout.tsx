@@ -25,7 +25,7 @@ export function Layout() {
             </Link>
             {isStaff() && (
               <Link to="/admin" className="opacity-90 hover:opacity-100 transition">
-                Admin
+                Operations
               </Link>
             )}
             {user ? (

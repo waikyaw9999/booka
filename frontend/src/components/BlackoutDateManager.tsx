@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { BlackoutDate } from '../types';
+import { EmptyState, InlineAlert, ConfirmAction } from './ui';
 
 interface BlackoutDateManagerProps {
   token: string;
@@ -15,6 +16,7 @@ export function BlackoutDateManager({ token, hotelId }: BlackoutDateManagerProps
   const [roomTypeId, setRoomTypeId] = useState<string>('');
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const { data: blackouts, isLoading } = useQuery({
     queryKey: ['admin-blackouts'],
@@ -42,55 +44,62 @@ export function BlackoutDateManager({ token, hotelId }: BlackoutDateManagerProps
       setRoomTypeId('');
       setReason('');
       setError('');
+      setSuccess('Blackout date added.');
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => {
+      setSuccess('');
+      setError(err.message);
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.deleteBlackoutDate(token, id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-blackouts'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-blackouts'] });
+      setSuccess('Blackout removed.');
+    },
+    onError: (err: Error) => setError(err.message),
   });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setSuccess('');
     createMutation.mutate();
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Blackout Dates</h2>
-      <p className="text-slate-500 text-sm">
-        Block booking for date ranges — property-wide or per room type.
-      </p>
+      {error && <InlineAlert tone="error">{error}</InlineAlert>}
+      {success && <InlineAlert tone="success">{success}</InlineAlert>}
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-4 grid md:grid-cols-2 gap-3">
+      <form onSubmit={handleSubmit} className="ops-panel grid gap-3 md:grid-cols-2">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Start date</label>
+          <label className="label-caps">Start date</label>
           <input
             type="date"
             required
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            className="input-field"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">End date (exclusive)</label>
+          <label className="label-caps">End date (exclusive)</label>
           <input
             type="date"
             required
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            className="input-field"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Scope</label>
+          <label className="label-caps">Scope</label>
           <select
             value={roomTypeId}
             onChange={(e) => setRoomTypeId(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            className="input-field"
           >
             <option value="">Entire property</option>
             {roomTypes?.map((rt) => (
@@ -101,68 +110,66 @@ export function BlackoutDateManager({ token, hotelId }: BlackoutDateManagerProps
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Reason</label>
+          <label className="label-caps">Reason</label>
           <input
             required
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Holiday closure, renovation"
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            className="input-field"
           />
         </div>
-        {error && <p className="md:col-span-2 text-red-600 text-sm">{error}</p>}
         <div className="md:col-span-2">
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+            className="btn-primary"
           >
-            {createMutation.isPending ? 'Adding...' : 'Add blackout'}
+            {createMutation.isPending ? 'Adding…' : 'Add blackout'}
           </button>
         </div>
       </form>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div className="ops-panel !p-0 overflow-hidden">
         {isLoading ? (
-          <p className="p-4 text-slate-500 text-sm">Loading blackout dates...</p>
+          <p className="p-4 text-sm text-ink/45">Loading blackout dates…</p>
+        ) : !blackouts?.length ? (
+          <div className="p-4">
+            <EmptyState
+              title="No blackout dates"
+              description="Add a window when the property or a room type cannot accept new bookings."
+            />
+          </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-4 py-2">Dates</th>
-                <th className="px-4 py-2">Scope</th>
-                <th className="px-4 py-2">Reason</th>
-                <th className="px-4 py-2"></th>
+                <th>Dates</th>
+                <th>Scope</th>
+                <th>Reason</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {blackouts?.map((b: BlackoutDate) => (
-                <tr key={b.id} className="border-t border-slate-100">
-                  <td className="px-4 py-2 text-xs">
+              {blackouts.map((b: BlackoutDate) => (
+                <tr key={b.id}>
+                  <td className="whitespace-nowrap text-xs">
                     {b.startDate} → {b.endDate}
                   </td>
-                  <td className="px-4 py-2">
-                    {b.roomTypeName ?? 'Entire property'}
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">{b.reason}</td>
-                  <td className="px-4 py-2 text-right">
-                    <button
-                      onClick={() => deleteMutation.mutate(b.id)}
-                      disabled={deleteMutation.isPending}
-                      className="text-red-600 hover:underline text-xs"
+                  <td>{b.roomTypeName ?? 'Entire property'}</td>
+                  <td className="text-ink/65">{b.reason}</td>
+                  <td className="text-right">
+                    <ConfirmAction
+                      label="Delete"
+                      tone="danger"
+                      confirmLabel="Delete"
+                      onConfirm={() => deleteMutation.mutateAsync(b.id)}
                     >
-                      Delete
-                    </button>
+                      Remove this blackout?
+                    </ConfirmAction>
                   </td>
                 </tr>
               ))}
-              {blackouts?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                    No blackout dates configured
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         )}

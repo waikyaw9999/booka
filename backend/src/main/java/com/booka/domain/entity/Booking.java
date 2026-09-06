@@ -1,6 +1,8 @@
 package com.booka.domain.entity;
 
 import com.booka.domain.enums.BookingStatus;
+import com.booka.domain.enums.PaymentStatus;
+import com.booka.domain.enums.ReservationChannel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -26,11 +28,31 @@ public class Booking {
     @Column(name = "hotel_id", nullable = false)
     private Long hotelId;
 
-    @Column(name = "room_id", nullable = false)
+    @Column(name = "room_id")
     private Long roomId;
+
+    @Column(name = "room_type_id", nullable = false)
+    private Long roomTypeId;
 
     @Column(name = "guest_id", nullable = false)
     private Long guestId;
+
+    @Column(name = "confirmation_code", nullable = false, unique = true, length = 32)
+    private String confirmationCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private ReservationChannel channel;
+
+    @Column(name = "external_reservation_id", length = 128)
+    private String externalReservationId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, length = 32)
+    private PaymentStatus paymentStatus;
+
+    @Column(name = "stripe_checkout_session_id", length = 128)
+    private String stripeCheckoutSessionId;
 
     @Column(name = "check_in_date", nullable = false)
     private LocalDate checkInDate;

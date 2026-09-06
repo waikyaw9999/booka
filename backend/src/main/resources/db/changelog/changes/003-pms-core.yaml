@@ -1,0 +1,309 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-pms-rooms-housekeeping
+      author: booka
+      changes:
+        - addColumn:
+            tableName: rooms
+            columns:
+              - column:
+                  name: housekeeping_status
+                  type: VARCHAR(32)
+                  defaultValue: CLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: floor
+                  type: INT
+              - column:
+                  name: notes
+                  type: TEXT
+
+  - changeSet:
+      id: 004-pms-bookings-crs
+      author: booka
+      changes:
+        - addColumn:
+            tableName: bookings
+            columns:
+              - column:
+                  name: confirmation_code
+                  type: VARCHAR(32)
+              - column:
+                  name: room_type_id
+                  type: BIGINT
+              - column:
+                  name: channel
+                  type: VARCHAR(32)
+                  defaultValue: DIRECT
+              - column:
+                  name: external_reservation_id
+                  type: VARCHAR(128)
+              - column:
+                  name: payment_status
+                  type: VARCHAR(32)
+                  defaultValue: N_A
+              - column:
+                  name: stripe_checkout_session_id
+                  type: VARCHAR(128)
+        - dropNotNullConstraint:
+            tableName: bookings
+            columnName: room_id
+            columnDataType: BIGINT
+        - sql:
+            sql: >
+              UPDATE bookings
+              SET room_type_id = (SELECT r.room_type_id FROM rooms r WHERE r.id = bookings.room_id),
+                  confirmation_code = CONCAT('BK-LEGACY-', id),
+                  channel = COALESCE(channel, 'DIRECT'),
+                  payment_status = COALESCE(payment_status, 'PAID')
+              WHERE room_type_id IS NULL AND room_id IS NOT NULL
+        - addNotNullConstraint:
+            tableName: bookings
+            columnName: room_type_id
+            columnDataType: BIGINT
+        - addNotNullConstraint:
+            tableName: bookings
+            columnName: confirmation_code
+            columnDataType: VARCHAR(32)
+        - addNotNullConstraint:
+            tableName: bookings
+            columnName: channel
+            columnDataType: VARCHAR(32)
+        - addNotNullConstraint:
+            tableName: bookings
+            columnName: payment_status
+            columnDataType: VARCHAR(32)
+        - addUniqueConstraint:
+            tableName: bookings
+            columnNames: confirmation_code
+            constraintName: uq_bookings_confirmation_code
+        - addForeignKeyConstraint:
+            baseTableName: bookings
+            baseColumnNames: room_type_id
+            referencedTableName: room_types
+            referencedColumnNames: id
+            constraintName: fk_bookings_room_type
+        - createIndex:
+            tableName: bookings
+            indexName: idx_bookings_channel_external
+            columns:
+              - column:
+                  name: channel
+              - column:
+                  name: external_reservation_id
+
+  - changeSet:
+      id: 004-pms-folios
+      author: booka
+      changes:
+        - createTable:
+            tableName: folios
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: booking_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: folios
+            baseColumnNames: booking_id
+            referencedTableName: bookings
+            referencedColumnNames: id
+            constraintName: fk_folios_booking
+        - addForeignKeyConstraint:
+            baseTableName: folios
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_folios_hotel
+        - createTable:
+            tableName: folio_line_items
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: folio_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_ref
+                  type: VARCHAR(128)
+              - column:
+                  name: posted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: folio_line_items
+            baseColumnNames: folio_id
+            referencedTableName: folios
+            referencedColumnNames: id
+            constraintName: fk_folio_line_items_folio
+        - createIndex:
+            tableName: folio_line_items
+            indexName: idx_folio_line_external_ref
+            columns:
+              - column:
+                  name: folio_id
+              - column:
+                  name: external_ref
+
+  - changeSet:
+      id: 004-pms-maintenance-tickets
+      author: booka
+      changes:
+        - createTable:
+            tableName: maintenance_tickets
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: room_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: priority
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reported_by
+                  type: VARCHAR(255)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: maintenance_tickets
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_maintenance_tickets_hotel
+        - addForeignKeyConstraint:
+            baseTableName: maintenance_tickets
+            baseColumnNames: room_id
+            referencedTableName: rooms
+            referencedColumnNames: id
+            constraintName: fk_maintenance_tickets_room
+
+  - changeSet:
+      id: 004-pms-channel-api-keys
+      author: booka
+      changes:
+        - createTable:
+            tableName: channel_api_keys
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: channel
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: key_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: channel_api_keys
+            indexName: idx_channel_api_keys_channel
+            columns:
+              - column:
+                  name: channel

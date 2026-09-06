@@ -11,6 +11,18 @@
   --color-fog: #f4f1ea;
   --color-mist: #faf8f4;
   --color-gold: #b8956c;
+  /* Semantic status */
+  --color-status-occupied: #1a3c34;
+  --color-status-clean: #2f6b5a;
+  --color-status-dirty: #a67c52;
+  --color-status-inspecting: #3d7a8b;
+  --color-status-maintenance: #8b4a3d;
+  --color-status-pending: #9a7b4f;
+  --color-status-paid: #2f6b5a;
+  --color-status-unpaid: #a65c3d;
+  --color-danger: #9b3d3d;
+  --color-success: #2a6b4f;
+  --color-warning: #9a7b4f;
 }
 
 @layer base {
@@ -105,6 +117,35 @@
   }
 }
 
+@keyframes panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tab-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes row-flash {
+  0% {
+    background-color: rgba(61, 139, 122, 0.18);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 .animate-rise {
   animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -119,6 +160,18 @@
 
 .animate-fade {
   animation: fade-in 1s ease both;
+}
+
+.animate-panel {
+  animation: panel-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-tab {
+  animation: tab-fade 0.28s ease both;
+}
+
+.animate-row-highlight {
+  animation: row-flash 1.2s ease both;
 }
 
 .hero-media {
@@ -151,6 +204,109 @@
   filter: none;
 }
 
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-xl border border-sand bg-white/90 px-4 py-2.5 text-sm font-semibold text-forest transition;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-fog);
+  border-color: var(--color-lagoon);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.55;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium text-moss transition;
+}
+
+.btn-ghost:hover {
+  background-color: rgba(47, 107, 90, 0.08);
+}
+
+.btn-danger {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white transition;
+  background-color: var(--color-danger);
+}
+
+.btn-danger:hover {
+  filter: brightness(1.06);
+}
+
 .surface {
   @apply rounded-2xl border border-sand/80 bg-white/70 backdrop-blur-sm;
+}
+
+.surface-elevated {
+  @apply rounded-2xl border border-sand/90 bg-white;
+  box-shadow: 0 12px 40px -24px rgba(16, 32, 27, 0.35);
+}
+
+.ops-panel {
+  @apply rounded-2xl border border-sand/70 bg-white/85 p-4 sm:p-5;
+  box-shadow: 0 8px 28px -20px rgba(16, 32, 27, 0.28);
+}
+
+.ops-canvas {
+  background:
+    radial-gradient(ellipse 50% 40% at 0% 0%, rgba(61, 139, 122, 0.07), transparent),
+    linear-gradient(180deg, #f7f4ee 0%, #f0ebe3 100%);
+}
+
+.data-table {
+  @apply w-full text-sm;
+}
+
+.data-table thead {
+  @apply text-left text-xs font-semibold uppercase tracking-wide text-ink/45;
+  background-color: rgba(231, 225, 214, 0.55);
+}
+
+.data-table th {
+  @apply px-3 py-2.5 font-semibold;
+}
+
+.data-table td {
+  @apply px-3 py-2.5 align-middle;
+}
+
+.data-table tbody tr {
+  @apply border-t border-sand/70 transition-colors;
+}
+
+.data-table tbody tr:hover {
+  background-color: rgba(61, 139, 122, 0.04);
+}
+
+.label-caps {
+  @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-ink/55;
+}
+
+/* Room grid status accents */
+.room-cell-available {
+  border-color: rgba(47, 107, 90, 0.35);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(47, 107, 90, 0.06));
+}
+
+.room-cell-occupied {
+  border-color: rgba(26, 60, 52, 0.45);
+  background: linear-gradient(160deg, rgba(26, 60, 52, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.room-cell-maintenance {
+  border-color: rgba(139, 74, 61, 0.4);
+  background: linear-gradient(160deg, rgba(139, 74, 61, 0.1), rgba(255, 255, 255, 0.95));
+}
+
+.hk-dirty {
+  color: var(--color-status-dirty);
+}
+
+.hk-clean {
+  color: var(--color-status-clean);
+}
+
+.hk-inspecting {
+  color: var(--color-status-inspecting);
 }

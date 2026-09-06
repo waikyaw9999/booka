@@ -51,23 +51,28 @@ export function RagChat({
   }
 
   return (
-    <div className="surface overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-sand/80 bg-gradient-to-b from-white/90 to-fog/40 shadow-[0_16px_40px_-28px_rgba(16,32,27,0.4)]">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between bg-forest/5 px-4 py-3 font-medium text-forest"
+        className="flex w-full items-center justify-between border-b border-sand/60 bg-forest px-4 py-3.5 text-left text-white"
       >
-        <span className="font-display text-lg">{title}</span>
-        <span className="text-xs text-moss">
-          {ragAvailable === false ? 'Offline mode' : ragAvailable ? 'Live assistant' : ''}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold/90">
+            Concierge
+          </p>
+          <span className="font-display text-lg font-semibold">{title}</span>
+        </div>
+        <span className="text-xs text-sand/70">
+          {ragAvailable === false ? 'Offline mode' : ragAvailable ? 'Live' : open ? 'Collapse' : 'Open'}
         </span>
       </button>
 
       {open && (
-        <div className="space-y-4 p-4">
+        <div className="animate-tab space-y-4 p-4">
           <div className="h-72 space-y-3 overflow-y-auto pr-1">
             {messages.length === 0 && (
-              <p className="text-sm text-ink/55">
+              <p className="rounded-xl border border-dashed border-sand bg-fog/50 px-3 py-4 text-sm text-ink/55">
                 Ask about amenities, policies, blackouts, or room availability.
               </p>
             )}
@@ -77,7 +82,7 @@ export function RagChat({
                 className={`rounded-xl px-3 py-2 text-sm ${
                   msg.role === 'user'
                     ? 'ml-8 bg-forest text-white'
-                    : 'mr-8 bg-sand/60 text-ink'
+                    : 'mr-8 border border-sand/70 bg-white/90 text-ink'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{msg.content}</p>

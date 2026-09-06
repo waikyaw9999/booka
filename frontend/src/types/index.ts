@@ -40,10 +40,12 @@ export interface AvailableRoomType {
 
 export interface Booking {
   id: number;
+  confirmationCode: string;
   hotelId: number;
   hotelName: string;
-  roomId: number;
-  roomNumber: string;
+  roomId: number | null;
+  roomNumber: string | null;
+  roomTypeId: number;
   roomTypeName: string;
   guestId: number;
   guestName: string;
@@ -53,6 +55,9 @@ export interface Booking {
   numGuests: number;
   totalPrice: number;
   status: BookingStatus;
+  channel: ReservationChannel;
+  paymentStatus: PaymentStatus;
+  externalReservationId: string | null;
   createdAt: string;
 }
 
@@ -62,6 +67,68 @@ export type BookingStatus =
   | 'CHECKED_IN'
   | 'CHECKED_OUT'
   | 'CANCELLED';
+
+export type ReservationChannel = 'DIRECT' | 'WALK_IN' | 'OTA' | 'CHANNEL_MANAGER';
+export type PaymentStatus = 'UNPAID' | 'PAID' | 'REFUNDED' | 'N_A';
+export type HousekeepingStatus = 'CLEAN' | 'DIRTY' | 'INSPECTING';
+export type RoomInventoryStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
+export type FolioLineType = 'ROOM' | 'TAX' | 'POS_FB' | 'PAYMENT' | 'ADJUSTMENT';
+export type FolioStatus = 'OPEN' | 'CLOSED';
+
+export interface RoomBoardItem {
+  id: number;
+  roomTypeId: number;
+  roomTypeName: string;
+  roomNumber: string;
+  floor: number | null;
+  status: RoomInventoryStatus;
+  housekeepingStatus: HousekeepingStatus;
+  notes: string | null;
+  currentBookingId: number | null;
+  currentGuestName: string | null;
+  confirmationCode: string | null;
+}
+
+export interface MaintenanceTicket {
+  id: number;
+  hotelId: number;
+  roomId: number;
+  roomNumber: string;
+  title: string;
+  description: string | null;
+  priority: TicketPriority;
+  status: TicketStatus;
+  reportedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FolioLineItem {
+  id: number;
+  type: FolioLineType;
+  description: string;
+  amount: number;
+  externalRef: string | null;
+  postedAt: string;
+}
+
+export interface Folio {
+  id: number;
+  bookingId: number;
+  hotelId: number;
+  status: FolioStatus;
+  balance: number;
+  chargesTotal: number;
+  paymentsTotal: number;
+  lineItems: FolioLineItem[];
+}
+
+export interface CheckoutSession {
+  sessionId: string;
+  url: string;
+}
 
 export interface DashboardStats {
   totalRooms: number;
