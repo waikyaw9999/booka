@@ -3,12 +3,14 @@ package com.booka.service;
 import com.booka.domain.entity.*;
 import com.booka.domain.enums.RoomStatus;
 import com.booka.dto.HotelDtos.*;
+import com.booka.exception.BusinessException;
 import com.booka.exception.ResourceNotFoundException;
 import com.booka.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -70,26 +72,81 @@ public class HotelService {
     }
 
     @Transactional
+    public HotelResponse updateHotel(Long id, UpdateHotelRequest request, Long staffHotelId) {
+        assertHotelAccess(id, staffHotelId);
+        Hotel hotel = findHotel(id);
+        if (request.amenities() != null) {
+            hotel.setAmenities(normalizeAmenities(request.amenities()));
+        }
+        if (request.cancellationPolicy() != null) {
+            hotel.setCancellationPolicy(request.cancellationPolicy().isBlank()
+                    ? null
+                    : request.cancellationPolicy().trim());
+        }
+        if (request.description() != null) {
+            hotel.setDescription(request.description().isBlank() ? null : request.description().trim());
+        }
+        return toHotelResponse(hotelRepository.save(hotel));
+    }
+
+    @Transactional
     public RoomTypeResponse createRoomType(CreateRoomTypeRequest request) {
         findHotel(request.hotelId());
         RoomType roomType = RoomType.builder()
                 .hotelId(request.hotelId())
-                .name(request.name())
+                .name(request.name().trim())
                 .description(request.description())
                 .maxOccupancy(request.maxOccupancy())
                 .baseRate(request.baseRate())
-                .amenities(request.amenities())
+                .amenities(normalizeAmenities(request.amenities()))
                 .build();
         return toRoomTypeResponse(roomTypeRepository.save(roomType));
     }
 
     @Transactional
-    public RoomResponse createRoom(CreateRoomRequest request) {
-        roomTypeRepository.findById(request.roomTypeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Room type not found"));
+    public RoomTypeResponse updateRoomType(Long id, UpdateRoomTypeRequest request, Long staffHotelId) {
+        RoomType roomType = findRoomType(id);
+        assertHotelAccess(roomType.getHotelId(), staffHotelId);
+
+        if (request.name() != null) {
+            if (request.name().isBlank()) {
+                throw new BusinessException("Room type name cannot be blank");
+            }
+            roomType.setName(request.name().trim());
+        }
+        if (request.description() != null) {
+            roomType.setDescription(request.description().isBlank() ? null : request.description().trim());
+        }
+        if (request.maxOccupancy() != null) {
+            roomType.setMaxOccupancy(request.maxOccupancy());
+        }
+        if (request.baseRate() != null) {
+            if (request.baseRate().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessException("Base rate must be greater than zero");
+            }
+            roomType.setBaseRate(request.baseRate());
+        }
+        if (request.amenities() != null) {
+            roomType.setAmenities(normalizeAmenities(request.amenities()));
+        }
+        return toRoomTypeResponse(roomTypeRepository.save(roomType));
+    }
+
+    @Transactional
+    public RoomResponse createRoom(CreateRoomRequest request, Long staffHotelId) {
+        RoomType roomType = findRoomType(request.roomTypeId());
+        assertHotelAccess(roomType.getHotelId(), staffHotelId);
+
+        String roomNumber = request.roomNumber().trim();
+        if (roomRepository.existsByRoomTypeIdAndRoomNumberIgnoreCase(request.roomTypeId(), roomNumber)) {
+            throw new BusinessException("Room number already exists for this room type: " + roomNumber);
+        }
+
         Room room = Room.builder()
                 .roomTypeId(request.roomTypeId())
-                .roomNumber(request.roomNumber())
+                .roomNumber(roomNumber)
+                .floor(request.floor())
+                .notes(request.notes() == null || request.notes().isBlank() ? null : request.notes().trim())
                 .status(RoomStatus.AVAILABLE)
                 .housekeepingStatus(com.booka.domain.enums.HousekeepingStatus.CLEAN)
                 .build();
@@ -106,9 +163,23 @@ public class HotelService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room type not found: " + id));
     }
 
+    private void assertHotelAccess(Long hotelId, Long staffHotelId) {
+        if (staffHotelId != null && !staffHotelId.equals(hotelId)) {
+            throw new BusinessException("Resource does not belong to your hotel");
+        }
+    }
+
+    private String normalizeAmenities(String amenities) {
+        if (amenities == null) {
+            return null;
+        }
+        String trimmed = amenities.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private void validateDates(LocalDate checkIn, LocalDate checkOut) {
         if (!checkIn.isBefore(checkOut)) {
-            throw new com.booka.exception.BusinessException("Check-in date must be before check-out date");
+            throw new BusinessException("Check-in date must be before check-out date");
         }
     }
 
@@ -123,6 +194,12 @@ public class HotelService {
     }
 
     private RoomResponse toRoomResponse(Room r) {
-        return new RoomResponse(r.getId(), r.getRoomTypeId(), r.getRoomNumber(), r.getStatus().name());
+        return new RoomResponse(
+                r.getId(),
+                r.getRoomTypeId(),
+                r.getRoomNumber(),
+                r.getStatus().name(),
+                r.getFloor(),
+                r.getNotes());
     }
 }

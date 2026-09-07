@@ -20,6 +20,15 @@ spring:
 server:
   port: 8080
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 booka:
   jwt:
     secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars}
@@ -55,6 +64,17 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/booka}
     username: ${DATABASE_USERNAME:booka}
     password: ${DATABASE_PASSWORD:booka_secret}
+    driver-class-name: org.postgresql.Driver
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
 ---

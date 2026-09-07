@@ -138,14 +138,32 @@ public class AdminController {
         return hotelService.createHotel(request);
     }
 
+    @PatchMapping("/hotels/{id}")
+    HotelResponse updateHotel(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateHotelRequest request) {
+        return hotelService.updateHotel(id, request, user.getHotelId());
+    }
+
     @PostMapping("/room-types")
     RoomTypeResponse createRoomType(@Valid @RequestBody CreateRoomTypeRequest request) {
         return hotelService.createRoomType(request);
     }
 
+    @PatchMapping("/room-types/{id}")
+    RoomTypeResponse updateRoomType(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateRoomTypeRequest request) {
+        return hotelService.updateRoomType(id, request, user.getHotelId());
+    }
+
     @PostMapping("/rooms")
-    RoomResponse createRoom(@Valid @RequestBody CreateRoomRequest request) {
-        return hotelService.createRoom(request);
+    RoomResponse createRoom(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @Valid @RequestBody CreateRoomRequest request) {
+        return hotelService.createRoom(request, user.getHotelId());
     }
 
     @GetMapping("/blackout-dates")

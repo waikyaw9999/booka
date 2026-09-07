@@ -12,6 +12,8 @@ import java.util.List;
 public interface RoomRepository extends JpaRepository<Room, Long> {
     List<Room> findByRoomTypeId(Long roomTypeId);
 
+    boolean existsByRoomTypeIdAndRoomNumberIgnoreCase(Long roomTypeId, String roomNumber);
+
     @Query("""
             SELECT r FROM Room r
             JOIN RoomType rt ON rt.id = r.roomTypeId

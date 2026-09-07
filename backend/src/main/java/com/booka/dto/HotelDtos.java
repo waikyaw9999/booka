@@ -1,5 +1,10 @@
 package com.booka.dto;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 
 public final class HotelDtos {
@@ -31,7 +36,9 @@ public final class HotelDtos {
             Long id,
             Long roomTypeId,
             String roomNumber,
-            String status
+            String status,
+            Integer floor,
+            String notes
     ) {}
 
     public record AvailabilityBody(
@@ -56,27 +63,43 @@ public final class HotelDtos {
     ) {}
 
     public record CreateHotelRequest(
-            String name,
+            @NotBlank String name,
             String description,
-            String address,
-            String city,
-            String country,
+            @NotBlank String address,
+            @NotBlank String city,
+            @NotBlank String country,
             String amenities,
             String cancellationPolicy
     ) {}
 
+    public record UpdateHotelRequest(
+            String amenities,
+            String cancellationPolicy,
+            String description
+    ) {}
+
     public record CreateRoomTypeRequest(
-            Long hotelId,
+            @NotNull Long hotelId,
+            @NotBlank String name,
+            String description,
+            @NotNull @Min(1) Integer maxOccupancy,
+            @NotNull @DecimalMin(value = "0.01", inclusive = true) BigDecimal baseRate,
+            String amenities
+    ) {}
+
+    public record UpdateRoomTypeRequest(
             String name,
             String description,
-            Integer maxOccupancy,
-            BigDecimal baseRate,
+            @Min(1) Integer maxOccupancy,
+            @DecimalMin(value = "0.01", inclusive = true) BigDecimal baseRate,
             String amenities
     ) {}
 
     public record CreateRoomRequest(
-            Long roomTypeId,
-            String roomNumber
+            @NotNull Long roomTypeId,
+            @NotBlank String roomNumber,
+            Integer floor,
+            String notes
     ) {}
 
     public record DashboardStatsResponse(

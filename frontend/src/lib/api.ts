@@ -267,4 +267,51 @@ export const api = {
 
   getRoomTypes: (hotelId: number) =>
     request<RoomType[]>(`/api/v1/hotels/${hotelId}/room-types`),
+
+  updateHotel: (
+    token: string,
+    id: number,
+    body: { amenities?: string; cancellationPolicy?: string; description?: string },
+  ) =>
+    request<Hotel>(`/api/v1/admin/hotels/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }, token),
+
+  updateRoomType: (
+    token: string,
+    id: number,
+    body: {
+      name?: string;
+      description?: string;
+      maxOccupancy?: number;
+      baseRate?: number;
+      amenities?: string;
+    },
+  ) =>
+    request<RoomType>(`/api/v1/admin/room-types/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }, token),
+
+  createRoom: (
+    token: string,
+    body: {
+      roomTypeId: number;
+      roomNumber: string;
+      floor?: number | null;
+      notes?: string | null;
+    },
+  ) =>
+    request<{
+      id: number;
+      roomTypeId: number;
+      roomNumber: string;
+      status: string;
+      floor: number | null;
+      notes: string | null;
+    }>('/api/v1/admin/rooms', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }, token),
 };

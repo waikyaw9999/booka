@@ -9,6 +9,7 @@ const NAV = [
   { id: 'housekeeping', label: 'Housekeeping', path: '/admin?tab=housekeeping' },
   { id: 'maintenance', label: 'Maintenance', path: '/admin?tab=maintenance' },
   { id: 'folios', label: 'Folios', path: '/admin?tab=folios' },
+  { id: 'inventory', label: 'Inventory', path: '/admin?tab=inventory' },
   { id: 'blackouts', label: 'Blackouts', path: '/admin?tab=blackouts' },
   { id: 'assistant', label: 'Assistant', path: '/admin?tab=assistant' },
 ] as const;

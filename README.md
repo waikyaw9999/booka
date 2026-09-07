@@ -48,6 +48,12 @@ Full-stack hotel booking platform with guest booking flows, Front Office PMS too
 
 For local Stripe webhooks: `stripe listen --forward-to localhost:8080/api/v1/payments/stripe/webhook`
 
+## Production deploy (VPS + Docker Hub)
+
+CI/CD ships images to Docker Hub, then SSHs to the VPS to pull and restart Compose. Repo assets: `.github/workflows/deploy.yml`, `docker-compose.prod.yml`, `.env.example`.
+
+Full setup (GitHub secrets, one-time VPS steps, rollout order): **[docs/VPS_DOCKER_CICD.md](docs/VPS_DOCKER_CICD.md)**.
+
 ## Demo credentials
 
 | Role | Email | Password |
@@ -95,8 +101,11 @@ npm run dev
 
 ```
 booka/
-├── backend/          # Spring Boot API
-├── frontend/         # React SPA
+├── .github/workflows/   # CI/CD (test → Docker Hub → VPS)
+├── backend/             # Spring Boot API
+├── frontend/            # React SPA
 ├── docker-compose.yml
-└── .cursorrules      # AI coding guidelines
+├── docker-compose.prod.yml
+├── docs/VPS_DOCKER_CICD.md
+└── .cursorrules         # AI coding guidelines
 ```

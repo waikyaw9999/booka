@@ -9,6 +9,7 @@ import { RoomBoard, HousekeepingBoard } from '../components/admin/RoomBoard';
 import { MaintenanceTickets } from '../components/admin/MaintenanceTickets';
 import { FolioPanel } from '../components/admin/FolioPanel';
 import { WalkInForm } from '../components/admin/WalkInForm';
+import { PropertyInventory } from '../components/admin/PropertyInventory';
 import { PageHeader, MetricTile, StatusPill, EmptyState, InlineAlert, SegmentedControl } from '../components/ui';
 import type { Booking, BookingStatus } from '../types';
 
@@ -19,6 +20,7 @@ type Tab =
   | 'housekeeping'
   | 'maintenance'
   | 'folios'
+  | 'inventory'
   | 'blackouts'
   | 'assistant';
 
@@ -29,6 +31,7 @@ const TAB_IDS: Tab[] = [
   'housekeeping',
   'maintenance',
   'folios',
+  'inventory',
   'blackouts',
   'assistant',
 ];
@@ -227,10 +230,21 @@ export function AdminPage() {
         </div>
       )}
 
+      {tab === 'inventory' && (
+        <div className="space-y-5 animate-tab">
+          <PageHeader
+            eyebrow="Property"
+            title="Inventory"
+            description="Add rooms and keep hotel and room-type amenities current."
+          />
+          <PropertyInventory token={user!.token} hotelId={user!.hotelId ?? 1} />
+        </div>
+      )}
+
       {tab === 'blackouts' && (
         <div className="space-y-5 animate-tab">
           <PageHeader
-            eyebrow="Inventory"
+            eyebrow="Restrictions"
             title="Blackout dates"
             description="Block new bookings for property-wide or room-type windows."
           />

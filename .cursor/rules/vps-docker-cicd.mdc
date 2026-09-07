@@ -1,0 +1,38 @@
+---
+description: VPS Docker CI/CD pattern for Booka (GitHub Actions → Docker Hub → SSH pull/restart)
+alwaysApply: false
+globs: "{.github/workflows/**,docker-compose*.yml,**/Dockerfile*,docs/VPS_DOCKER_CICD.md,.env.example}"
+---
+
+# Booka VPS Docker CI/CD
+
+Follow `docs/VPS_DOCKER_CICD.md`. App code ships inside Docker Hub images; the VPS only pulls and restarts.
+
+## Required layout
+
+- `.github/workflows/deploy.yml`
+- `docker-compose.prod.yml`
+- `.env.example`
+- `backend/Dockerfile`, `frontend/Dockerfile`
+- `frontend/nginx.conf` — serve SPA, proxy `/api/` → `http://backend:8080`
+
+## Image tags (must match)
+
+- `${DOCKERHUB_USERNAME}/booka-backend:latest`
+- `${DOCKERHUB_USERNAME}/booka-frontend:latest`
+
+Workflow tags use `secrets.DOCKER_USERNAME`; VPS `.env` must set the same `DOCKERHUB_USERNAME`.
+
+## Deploy rules
+
+- Do **not** run `git fetch` / `git reset` on the VPS over HTTPS.
+- Gate VPS deploy with `vars.ENABLE_VPS_DEPLOY == 'true'`.
+- Secrets live in VPS `.env` and GitHub Actions secrets — never bake secrets into images.
+- Publish only the public frontend port; keep Postgres internal.
+- Frontend prod builds use empty `VITE_API_BASE_URL` (same-origin `/api` via nginx).
+
+## Rollout order
+
+1. Repo assets + Docker Hub secrets → confirm `docker-publish`
+2. VPS: Docker, Compose, copy `docker-compose.prod.yml` + `.env`, first `up -d`
+3. SSH secrets + `DEPLOY_PATH` → set `ENABLE_VPS_DEPLOY=true`
