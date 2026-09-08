@@ -12,6 +12,7 @@ Follow `docs/VPS_DOCKER_CICD.md`. App code ships inside Docker Hub images; the V
 
 - `.github/workflows/deploy.yml`
 - `docker-compose.prod.yml`
+- `Caddyfile` — HTTPS reverse proxy → `frontend:80` (Let's Encrypt)
 - `.env.example`
 - `backend/Dockerfile`, `frontend/Dockerfile`
 - `frontend/nginx.conf` — serve SPA, proxy `/api/` → `http://backend:8080`
@@ -28,11 +29,13 @@ Workflow tags use `secrets.DOCKER_USERNAME`; VPS `.env` must set the same `DOCKE
 - Do **not** run `git fetch` / `git reset` on the VPS over HTTPS.
 - Gate VPS deploy with `vars.ENABLE_VPS_DEPLOY == 'true'`.
 - Secrets live in VPS `.env` and GitHub Actions secrets — never bake secrets into images.
-- Publish only the public frontend port; keep Postgres internal.
+- Publish only Caddy `80`/`443`; keep frontend and Postgres internal on the Compose network.
+- `DOMAIN` defaults to `booka.juneko.online` (set in VPS `.env` if overriding).
 - Frontend prod builds use empty `VITE_API_BASE_URL` (same-origin `/api` via nginx).
+- After Compose/`Caddyfile` changes: `scp` to VPS — CI only pulls images.
 
 ## Rollout order
 
 1. Repo assets + Docker Hub secrets → confirm `docker-publish`
-2. VPS: Docker, Compose, copy `docker-compose.prod.yml` + `.env`, first `up -d`
+2. VPS: Docker, Compose, copy `docker-compose.prod.yml` + `Caddyfile` + `.env`, DNS + firewall, first `up -d`
 3. SSH secrets + `DEPLOY_PATH` → set `ENABLE_VPS_DEPLOY=true`

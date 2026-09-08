@@ -50,10 +50,9 @@ For local Stripe webhooks: `stripe listen --forward-to localhost:8080/api/v1/pay
 
 ## Production deploy (VPS + Docker Hub)
 
-CI/CD ships images to Docker Hub, then SSHs to the VPS to pull and restart Compose. Repo assets: `.github/workflows/deploy.yml`, `docker-compose.prod.yml`, `.env.example`.
+CI/CD ships images to Docker Hub, then SSHs to the VPS to pull and restart Compose. Repo assets: `.github/workflows/deploy.yml`, `docker-compose.prod.yml`, `Caddyfile`, `.env.example`.
 
-Full setup (GitHub secrets, one-time VPS steps, rollout order): **[docs/VPS_DOCKER_CICD.md](docs/VPS_DOCKER_CICD.md)**.
-
+Production HTTPS: Caddy on the VPS terminates Let's Encrypt TLS for `booka.juneko.online` and proxies to the internal frontend. See **[docs/VPS_DOCKER_CICD.md](docs/VPS_DOCKER_CICD.md)** (§7 HTTPS with Caddy) for DNS, firewall, `scp`, and verify steps.
 ## Demo credentials
 
 | Role | Email | Password |
@@ -104,6 +103,7 @@ booka/
 ├── .github/workflows/   # CI/CD (test → Docker Hub → VPS)
 ├── backend/             # Spring Boot API
 ├── frontend/            # React SPA
+├── Caddyfile            # Prod HTTPS → frontend:80
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 ├── docs/VPS_DOCKER_CICD.md

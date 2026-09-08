@@ -1,0 +1,5 @@
+# Booka production reverse proxy (Let's Encrypt automatic HTTPS).
+# DOMAIN defaults to booka.juneko.online; override via compose env if needed.
+{$DOMAIN:booka.juneko.online} {
+	reverse_proxy frontend:80
+}
