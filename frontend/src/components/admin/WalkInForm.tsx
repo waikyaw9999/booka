@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, getErrorMessage } from '../../lib/api';
 import { InlineAlert } from '../ui';
 
 interface Props {
@@ -64,7 +64,7 @@ export function WalkInForm({ token, hotelId, onCreated }: Props) {
       setRoomId('');
       onCreated?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Walk-in failed');
+      setError(getErrorMessage(err, 'Walk-in failed. Please try again.'));
     } finally {
       setBusy(false);
     }

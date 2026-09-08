@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/api';
+import { api, getErrorMessage } from '../lib/api';
+import { hotelDisplayImage, resolveMediaUrl } from '../lib/media';
 import { useBookingStore } from '../stores';
 import { PublicRagWidget } from '../components/PublicRagWidget';
 import { BlackoutNotice } from '../components/BlackoutNotice';
@@ -50,7 +51,7 @@ export function HotelDetailPage() {
       setAvailability(result);
       setDraft({ hotelId, hotelName: hotel?.name ?? null, checkInDate: checkIn, checkOutDate: checkOut, numGuests });
     } catch (err) {
-      setSearchError(err instanceof Error ? err.message : 'Search failed');
+      setSearchError(getErrorMessage(err, 'Search failed. Please try again.'));
     } finally {
       setSearching(false);
     }
@@ -71,11 +72,16 @@ export function HotelDetailPage() {
     );
   }
 
+  const heroImage = hotelDisplayImage(hotel);
+  const gallery = (hotel.images ?? [])
+    .map((img) => ({ ...img, resolved: resolveMediaUrl(img.url) }))
+    .filter((img) => img.resolved);
+
   return (
     <div>
       <section className="relative h-[42vh] min-h-[280px] overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=80"
+          src={heroImage}
           alt={hotel.name}
           className="absolute inset-0 h-full w-full object-cover"
         />
@@ -94,11 +100,26 @@ export function HotelDetailPage() {
       </section>
 
       <div className="mx-auto max-w-4xl space-y-10 px-4 py-10">
+        {gallery.length > 1 && (
+          <section className="animate-rise grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+            {gallery.map((img) => (
+              <figure key={img.id} className="overflow-hidden rounded-xl">
+                <img
+                  src={img.resolved!}
+                  alt={img.caption ?? hotel.name}
+                  className="h-28 w-full object-cover sm:h-32"
+                  loading="lazy"
+                />
+              </figure>
+            ))}
+          </section>
+        )}
+
         <section className="animate-rise space-y-3">
           <p className="max-w-2xl text-lg leading-relaxed text-ink/75">{hotel.description}</p>
           <p className="text-sm text-ink/55">{hotel.address}</p>
           <div className="flex flex-wrap gap-2 pt-2">
-            {hotel.amenities.split(',').map((item) => (
+            {(hotel.amenities ?? '').split(',').filter(Boolean).map((item) => (
               <span
                 key={item}
                 className="rounded-lg bg-sand/70 px-3 py-1 text-xs font-medium text-forest"
@@ -177,20 +198,32 @@ export function HotelDetailPage() {
               />
             ) : (
               <ul className="divide-y divide-sand/80 overflow-hidden rounded-2xl border border-sand/80 bg-white/70">
-                {availability.map((item) => (
+                {availability.map((item) => {
+                  const roomImage = resolveMediaUrl(item.roomType.primaryImageUrl);
+                  return (
                   <li
                     key={item.roomType.id}
                     className="flex flex-col gap-4 p-5 transition hover:bg-fog/50 md:flex-row md:items-center md:justify-between"
                   >
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-display text-xl font-semibold text-ink">
-                        {item.roomType.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-ink/65">{item.roomType.description}</p>
-                      <p className="mt-2 text-xs font-medium uppercase tracking-wide text-moss">
-                        {item.availableCount} available · {item.nights} night
-                        {item.nights === 1 ? '' : 's'}
-                      </p>
+                    <div className="flex min-w-0 flex-1 gap-4">
+                      {roomImage && (
+                        <img
+                          src={roomImage}
+                          alt={item.roomType.name}
+                          className="h-20 w-28 shrink-0 rounded-xl object-cover sm:h-24 sm:w-32"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="font-display text-xl font-semibold text-ink">
+                          {item.roomType.name}
+                        </h3>
+                        <p className="mt-1 text-sm text-ink/65">{item.roomType.description}</p>
+                        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-moss">
+                          {item.availableCount} available · {item.nights} night
+                          {item.nights === 1 ? '' : 's'}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-5 md:flex-col md:items-end md:gap-2">
                       <div className="md:text-right">
@@ -211,7 +244,8 @@ export function HotelDetailPage() {
                       </Link>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </section>

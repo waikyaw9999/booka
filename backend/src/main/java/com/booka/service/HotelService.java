@@ -3,6 +3,7 @@ package com.booka.service;
 import com.booka.domain.entity.*;
 import com.booka.domain.enums.RoomStatus;
 import com.booka.dto.HotelDtos.*;
+import com.booka.dto.ImageDtos;
 import com.booka.exception.BusinessException;
 import com.booka.exception.ResourceNotFoundException;
 import com.booka.repository.*;
@@ -22,6 +23,8 @@ public class HotelService {
     private final HotelRepository hotelRepository;
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
+    private final HotelImageRepository hotelImageRepository;
+    private final RoomImageRepository roomImageRepository;
     private final BlackoutDateService blackoutDateService;
 
     public List<HotelResponse> listHotels() {
@@ -163,7 +166,7 @@ public class HotelService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room type not found: " + id));
     }
 
-    private void assertHotelAccess(Long hotelId, Long staffHotelId) {
+    void assertHotelAccess(Long hotelId, Long staffHotelId) {
         if (staffHotelId != null && !staffHotelId.equals(hotelId)) {
             throw new BusinessException("Resource does not belong to your hotel");
         }
@@ -184,13 +187,43 @@ public class HotelService {
     }
 
     private HotelResponse toHotelResponse(Hotel h) {
-        return new HotelResponse(h.getId(), h.getName(), h.getDescription(), h.getAddress(),
-                h.getCity(), h.getCountry(), h.getAmenities(), h.getCancellationPolicy());
+        var images = hotelImageRepository.findByHotelIdOrderBySortOrderAscIdAsc(h.getId()).stream()
+                .map(img -> new ImageDtos.ImageResponse(
+                        img.getId(),
+                        img.getUrl(),
+                        img.getCaption(),
+                        img.getSortOrder(),
+                        img.isPrimary()))
+                .toList();
+        String primaryUrl = images.stream()
+                .filter(ImageDtos.ImageResponse::primary)
+                .map(ImageDtos.ImageResponse::url)
+                .findFirst()
+                .orElse(images.isEmpty() ? null : images.get(0).url());
+        return new HotelResponse(
+                h.getId(),
+                h.getName(),
+                h.getDescription(),
+                h.getAddress(),
+                h.getCity(),
+                h.getCountry(),
+                h.getAmenities(),
+                h.getCancellationPolicy(),
+                images,
+                primaryUrl);
     }
 
     private RoomTypeResponse toRoomTypeResponse(RoomType rt) {
-        return new RoomTypeResponse(rt.getId(), rt.getHotelId(), rt.getName(), rt.getDescription(),
-                rt.getMaxOccupancy(), rt.getBaseRate(), rt.getAmenities());
+        String primaryImageUrl = roomImageRepository.findDisplayUrlForRoomType(rt.getId()).orElse(null);
+        return new RoomTypeResponse(
+                rt.getId(),
+                rt.getHotelId(),
+                rt.getName(),
+                rt.getDescription(),
+                rt.getMaxOccupancy(),
+                rt.getBaseRate(),
+                rt.getAmenities(),
+                primaryImageUrl);
     }
 
     private RoomResponse toRoomResponse(Room r) {

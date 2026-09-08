@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, getErrorMessage } from '../lib/api';
+import { resolveMediaUrl } from '../lib/media';
 import { useBookingStore } from '../stores';
 import { InlineAlert, EmptyState } from '../components/ui';
 
@@ -87,6 +88,7 @@ export function BookingPage() {
 
   const { selectedRoomType } = draft;
   const tax = selectedRoomType.totalPrice * 0.1;
+  const roomImage = resolveMediaUrl(selectedRoomType.roomType.primaryImageUrl);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -110,7 +112,7 @@ export function BookingPage() {
         confirmationCode: booking.confirmationCode,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Booking failed');
+      setError(getErrorMessage(err, 'Booking failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -130,6 +132,13 @@ export function BookingPage() {
 
       <section className="surface space-y-3 p-5 text-sm animate-panel">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-moss">Stay summary</p>
+        {roomImage && (
+          <img
+            src={roomImage}
+            alt={selectedRoomType.roomType.name}
+            className="h-36 w-full rounded-xl object-cover"
+          />
+        )}
         <Row label="Hotel" value={draft.hotelName ?? ''} />
         <Row label="Room" value={selectedRoomType.roomType.name} />
         <Row label="Dates" value={`${draft.checkInDate} → ${draft.checkOutDate}`} />

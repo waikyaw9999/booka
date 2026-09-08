@@ -24,7 +24,8 @@ public final class OperationsDtos {
             String notes,
             Long currentBookingId,
             String currentGuestName,
-            String confirmationCode
+            String confirmationCode,
+            String primaryImageUrl
     ) {}
 
     public record UpdateHousekeepingRequest(

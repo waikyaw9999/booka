@@ -31,3 +31,8 @@ logs/
 
 # RAG data
 backend/data/rag-store/
+
+# Local image uploads
+uploads/
+backend/uploads/
+**/booka/uploads/

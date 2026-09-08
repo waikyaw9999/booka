@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RagChat } from './RagChat';
-import { api } from '../lib/api';
+import { api, getErrorMessage } from '../lib/api';
 import { useRagStore } from '../stores';
 
 interface PublicRagWidgetProps {
@@ -32,7 +32,7 @@ export function PublicRagWidget({ hotelId }: PublicRagWidgetProps) {
     } catch (err) {
       addPublicMessage({
         role: 'assistant',
-        content: err instanceof Error ? err.message : 'Assistant unavailable. Please try again.',
+        content: getErrorMessage(err, 'Assistant unavailable. Please try again.'),
       });
     } finally {
       setLoading(false);

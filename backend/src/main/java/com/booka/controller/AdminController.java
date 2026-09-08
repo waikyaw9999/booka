@@ -4,13 +4,17 @@ import com.booka.dto.BlackoutDtos.*;
 import com.booka.dto.BookingDtos.*;
 import com.booka.dto.FolioDtos.*;
 import com.booka.dto.HotelDtos.*;
+import com.booka.dto.ImageDtos.*;
 import com.booka.dto.OperationsDtos.*;
 import com.booka.security.BookaUserDetails;
 import com.booka.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -26,6 +30,7 @@ public class AdminController {
     private final FrontOfficeService frontOfficeService;
     private final MaintenanceService maintenanceService;
     private final FolioService folioService;
+    private final ImageService imageService;
 
     @GetMapping("/dashboard")
     DashboardStatsResponse dashboard(@AuthenticationPrincipal BookaUserDetails user) {
@@ -164,6 +169,88 @@ public class AdminController {
             @AuthenticationPrincipal BookaUserDetails user,
             @Valid @RequestBody CreateRoomRequest request) {
         return hotelService.createRoom(request, user.getHotelId());
+    }
+
+    @GetMapping("/hotels/{id}/images")
+    List<ImageResponse> listHotelImages(@PathVariable Long id) {
+        return imageService.listHotelImages(id);
+    }
+
+    @PostMapping("/hotels/{id}/images")
+    ImageResponse addHotelImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @Valid @RequestBody AddImageRequest request) {
+        return imageService.addHotelImage(id, request, user.getHotelId());
+    }
+
+    @PostMapping(value = "/hotels/{id}/images/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ImageResponse uploadHotelImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "caption", required = false) String caption,
+            @RequestParam(value = "primary", required = false) Boolean primary) {
+        return imageService.uploadHotelImage(id, file, caption, primary, user.getHotelId());
+    }
+
+    @DeleteMapping("/hotels/{hotelId}/images/{imageId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteHotelImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long hotelId,
+            @PathVariable Long imageId) {
+        imageService.deleteHotelImage(hotelId, imageId, user.getHotelId());
+    }
+
+    @PostMapping("/hotels/{hotelId}/images/{imageId}/primary")
+    ImageResponse setPrimaryHotelImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long hotelId,
+            @PathVariable Long imageId) {
+        return imageService.setPrimaryHotelImage(hotelId, imageId, user.getHotelId());
+    }
+
+    @GetMapping("/rooms/{id}/images")
+    List<ImageResponse> listRoomImages(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id) {
+        return imageService.listRoomImages(id, user.getHotelId());
+    }
+
+    @PostMapping("/rooms/{id}/images")
+    ImageResponse addRoomImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @Valid @RequestBody AddImageRequest request) {
+        return imageService.addRoomImage(id, request, user.getHotelId());
+    }
+
+    @PostMapping(value = "/rooms/{id}/images/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ImageResponse uploadRoomImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "caption", required = false) String caption,
+            @RequestParam(value = "primary", required = false) Boolean primary) {
+        return imageService.uploadRoomImage(id, file, caption, primary, user.getHotelId());
+    }
+
+    @DeleteMapping("/rooms/{roomId}/images/{imageId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteRoomImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long roomId,
+            @PathVariable Long imageId) {
+        imageService.deleteRoomImage(roomId, imageId, user.getHotelId());
+    }
+
+    @PostMapping("/rooms/{roomId}/images/{imageId}/primary")
+    ImageResponse setPrimaryRoomImage(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long roomId,
+            @PathVariable Long imageId) {
+        return imageService.setPrimaryRoomImage(roomId, imageId, user.getHotelId());
     }
 
     @GetMapping("/blackout-dates")

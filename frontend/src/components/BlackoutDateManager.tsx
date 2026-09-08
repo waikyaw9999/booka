@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api';
+import { api, getErrorMessage } from '../lib/api';
 import type { BlackoutDate } from '../types';
 import { EmptyState, InlineAlert, ConfirmAction } from './ui';
 
@@ -48,7 +48,7 @@ export function BlackoutDateManager({ token, hotelId }: BlackoutDateManagerProps
     },
     onError: (err: Error) => {
       setSuccess('');
-      setError(err.message);
+      setError(getErrorMessage(err));
     },
   });
 
@@ -58,7 +58,7 @@ export function BlackoutDateManager({ token, hotelId }: BlackoutDateManagerProps
       queryClient.invalidateQueries({ queryKey: ['admin-blackouts'] });
       setSuccess('Blackout removed.');
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => setError(getErrorMessage(err)),
   });
 
   function handleSubmit(e: React.FormEvent) {

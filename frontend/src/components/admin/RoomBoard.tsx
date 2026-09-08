@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, getErrorMessage } from '../../lib/api';
+import { resolveMediaUrl } from '../../lib/media';
 import type { HousekeepingStatus, RoomBoardItem } from '../../types';
 import { StatusPill, EmptyState, InlineAlert, ConfirmAction } from '../ui';
 
@@ -41,7 +42,7 @@ export function RoomBoard({ token }: Props) {
       await refresh();
       setActionOk(`Checked in room #${room.roomNumber}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Check-in failed');
+      setActionError(getErrorMessage(err, 'Check-in failed. Please try again.'));
     }
   }
 
@@ -54,7 +55,7 @@ export function RoomBoard({ token }: Props) {
       await refresh();
       setActionOk(`Checked out room #${room.roomNumber}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Check-out failed');
+      setActionError(getErrorMessage(err, 'Check-out failed. Please try again.'));
     }
   }
 
@@ -66,12 +67,12 @@ export function RoomBoard({ token }: Props) {
       await refresh();
       setActionOk(`Assigned booking #${bookingId}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Assign failed');
+      setActionError(getErrorMessage(err, 'Assign failed. Please try again.'));
     }
   }
 
   if (isLoading) return <p className="text-sm text-ink/45">Loading room board…</p>;
-  if (error) return <InlineAlert tone="error">{(error as Error).message}</InlineAlert>;
+  if (error) return <InlineAlert tone="error">{getErrorMessage(error)}</InlineAlert>;
   if (!rooms?.length) {
     return (
       <EmptyState title="No rooms" description="Room inventory has not been seeded for this property." />
@@ -106,6 +107,13 @@ export function RoomBoard({ token }: Props) {
                 onClick={() => setSelectedId(room.id)}
                 className={`rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${cellClass} ${selectedRing}`}
               >
+                {room.primaryImageUrl && (
+                  <img
+                    src={resolveMediaUrl(room.primaryImageUrl) ?? room.primaryImageUrl}
+                    alt=""
+                    className="mb-2 h-16 w-full rounded-lg object-cover"
+                  />
+                )}
                 <div className="flex items-start justify-between gap-1">
                   <span className="font-display text-lg font-bold text-ink">#{room.roomNumber}</span>
                   <StatusPill label={room.housekeepingStatus} />
@@ -157,6 +165,14 @@ function RoomDetail({
           {room.floor != null ? ` · Floor ${room.floor}` : ''}
         </p>
       </div>
+
+      {room.primaryImageUrl && (
+        <img
+          src={resolveMediaUrl(room.primaryImageUrl) ?? room.primaryImageUrl}
+          alt={`Room ${room.roomNumber}`}
+          className="h-36 w-full rounded-xl object-cover"
+        />
+      )}
 
       <div className="flex flex-wrap gap-2">
         <StatusPill label={room.status} />
@@ -261,7 +277,7 @@ export function HousekeepingBoard({ token }: Props) {
       queryClient.invalidateQueries({ queryKey: ['room-board'] });
       setActionOk(`Room updated to ${housekeepingStatus}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Update failed');
+      setActionError(getErrorMessage(err, 'Update failed. Please try again.'));
     }
   }
 

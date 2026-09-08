@@ -20,7 +20,7 @@ Full-stack hotel booking platform with guest booking flows, Front Office PMS too
 - **Housekeeping & maintenance**: CLEAN / DIRTY / INSPECTING + maintenance tickets
 - **Folios**: room/tax lines, POS F&B charges routed to the guest bill
 - **CRS / channels**: confirmation codes, walk-in reservations, inbound OTA hooks (`X-Channel-Api-Key`)
-- **Staff/Admin**: dashboard, blackout dates, staff RAG (public + SOPs)
+- **Staff/Admin**: dashboard, blackout dates, property/room images (URL or local upload), staff RAG (public + SOPs)
 
 ## Quick start (Docker)
 

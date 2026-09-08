@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, getErrorMessage } from '../../lib/api';
 import { StatusPill, EmptyState, InlineAlert } from '../ui';
 
 interface Props {
@@ -59,7 +59,7 @@ export function FolioPanel({ token }: Props) {
       const booking = await api.getBookingByCode(token, trimmed);
       setResolvedBookingId(booking.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Booking not found');
+      setError(getErrorMessage(err, "We couldn't find that booking."));
     } finally {
       setResolving(false);
     }
@@ -81,7 +81,7 @@ export function FolioPanel({ token }: Props) {
       queryClient.invalidateQueries({ queryKey: ['folio', resolvedBookingId] });
       setSuccess('F&B charge posted.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to post charge');
+      setError(getErrorMessage(err, 'Failed to post charge. Please try again.'));
     }
   }
 
@@ -117,7 +117,7 @@ export function FolioPanel({ token }: Props) {
       )}
 
       {enabled && folioError && (
-        <InlineAlert tone="error">{(folioError as Error).message}</InlineAlert>
+        <InlineAlert tone="error">{getErrorMessage(folioError)}</InlineAlert>
       )}
 
       {enabled && !isLoading && !folio && !folioError && (

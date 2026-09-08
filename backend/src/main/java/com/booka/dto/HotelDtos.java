@@ -19,7 +19,9 @@ public final class HotelDtos {
             String city,
             String country,
             String amenities,
-            String cancellationPolicy
+            String cancellationPolicy,
+            java.util.List<ImageDtos.ImageResponse> images,
+            String primaryImageUrl
     ) {}
 
     public record RoomTypeResponse(
@@ -29,7 +31,9 @@ public final class HotelDtos {
             String description,
             Integer maxOccupancy,
             BigDecimal baseRate,
-            String amenities
+            String amenities,
+            /** Primary image from any physical room of this type, when present. */
+            String primaryImageUrl
     ) {}
 
     public record RoomResponse(

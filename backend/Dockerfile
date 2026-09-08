@@ -5,7 +5,8 @@ COPY src ./src
 RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:17-jre-alpine
-RUN apk add --no-cache curl
+# Optional: used by docker-compose.prod.yml healthcheck; don't fail builds if apk mirrors are unreachable
+RUN apk add --no-cache curl || true
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080

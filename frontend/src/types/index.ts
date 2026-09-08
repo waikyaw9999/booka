@@ -18,6 +18,16 @@ export interface Hotel {
   country: string;
   amenities: string;
   cancellationPolicy: string;
+  images?: PropertyImage[];
+  primaryImageUrl?: string | null;
+}
+
+export interface PropertyImage {
+  id: number;
+  url: string;
+  caption: string | null;
+  sortOrder: number;
+  primary: boolean;
 }
 
 export interface RoomType {
@@ -28,6 +38,8 @@ export interface RoomType {
   maxOccupancy: number;
   baseRate: number;
   amenities: string;
+  /** From a physical room of this type when staff uploaded room images. */
+  primaryImageUrl?: string | null;
 }
 
 export interface AvailableRoomType {
@@ -89,6 +101,7 @@ export interface RoomBoardItem {
   currentBookingId: number | null;
   currentGuestName: string | null;
   confirmationCode: string | null;
+  primaryImageUrl?: string | null;
 }
 
 export interface MaintenanceTicket {

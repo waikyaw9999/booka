@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, getErrorMessage } from '../../lib/api';
 import type { RoomType } from '../../types';
 import { EmptyState, InlineAlert, StatusPill } from '../ui';
+import { ImageManager } from './ImageManager';
+import { resolveMediaUrl } from '../../lib/media';
 
 interface Props {
   token: string;
@@ -25,6 +27,7 @@ export function PropertyInventory({ token, hotelId }: Props) {
   const [floor, setFloor] = useState('');
   const [notes, setNotes] = useState('');
   const [showAddRoom, setShowAddRoom] = useState(false);
+  const [imagesRoomId, setImagesRoomId] = useState<number | null>(null);
 
   const { data: hotel, isLoading: hotelLoading } = useQuery({
     queryKey: ['hotel', hotelId],
@@ -60,7 +63,7 @@ export function PropertyInventory({ token, hotelId }: Props) {
 
   function flashError(err: unknown) {
     setSuccess('');
-    setError(err instanceof Error ? err.message : 'Request failed');
+    setError(getErrorMessage(err, 'Unable to save. Please try again.'));
   }
 
   const saveHotelMutation = useMutation({
@@ -185,6 +188,23 @@ export function PropertyInventory({ token, hotelId }: Props) {
             </button>
           </form>
         )}
+      </section>
+
+      <section className="ops-panel space-y-3">
+        <div>
+          <h2 className="font-display text-lg font-semibold text-ink">Property images</h2>
+          <p className="mt-1 text-sm text-ink/50">
+            Shown on the guest home cards and hotel detail page. Primary image is the hero.
+          </p>
+        </div>
+        <ImageManager
+          token={token}
+          scope="hotel"
+          ownerId={hotelId}
+          title="Hotel gallery"
+          onFlashSuccess={flashSuccess}
+          onFlashError={flashError}
+        />
       </section>
 
       <section className="ops-panel space-y-3">
@@ -380,12 +400,24 @@ export function PropertyInventory({ token, hotelId }: Props) {
                   <th>Floor</th>
                   <th>Status</th>
                   <th>Notes</th>
+                  <th>Images</th>
                 </tr>
               </thead>
               <tbody>
                 {rooms.map((r) => (
                   <tr key={r.id}>
-                    <td className="font-medium text-ink">#{r.roomNumber}</td>
+                    <td className="font-medium text-ink">
+                      <span className="inline-flex items-center gap-2">
+                        {r.primaryImageUrl && (
+                          <img
+                            src={resolveMediaUrl(r.primaryImageUrl) ?? r.primaryImageUrl}
+                            alt=""
+                            className="h-8 w-10 rounded object-cover"
+                          />
+                        )}
+                        #{r.roomNumber}
+                      </span>
+                    </td>
                     <td className="text-sm">{r.roomTypeName || roomTypeName(r.roomTypeId)}</td>
                     <td className="text-sm text-ink/65">{r.floor ?? '—'}</td>
                     <td>
@@ -394,10 +426,33 @@ export function PropertyInventory({ token, hotelId }: Props) {
                     <td className="max-w-[14rem] truncate text-xs text-ink/50">
                       {r.notes?.trim() ? r.notes : '—'}
                     </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-secondary !px-2 !py-1 text-xs"
+                        onClick={() =>
+                          setImagesRoomId((id) => (id === r.id ? null : r.id))
+                        }
+                      >
+                        {imagesRoomId === r.id ? 'Hide' : 'Manage'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {imagesRoomId != null && (
+              <div className="border-t border-sand/70 pt-3">
+                <ImageManager
+                  token={token}
+                  scope="room"
+                  ownerId={imagesRoomId}
+                  title={`Room #${rooms.find((r) => r.id === imagesRoomId)?.roomNumber ?? imagesRoomId} images`}
+                  onFlashSuccess={flashSuccess}
+                  onFlashError={flashError}
+                />
+              </div>
+            )}
           </div>
         )}
       </section>

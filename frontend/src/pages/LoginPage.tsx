@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, getErrorMessage } from '../lib/api';
 import { useAuthStore } from '../stores';
 import type { UserRole } from '../types';
 import { InlineAlert } from '../components/ui';
@@ -29,7 +29,7 @@ export function LoginPage() {
       });
       navigate(res.role === 'GUEST' ? '/' : '/admin');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(getErrorMessage(err, 'Unable to sign in. Please try again.'));
     } finally {
       setLoading(false);
     }

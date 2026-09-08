@@ -15,7 +15,11 @@ import type {
   TicketPriority,
   TicketStatus,
   FolioLineType,
+  PropertyImage,
 } from '../types';
+import { normalizeHttpError, normalizeNetworkError } from './errors';
+
+export { getErrorMessage, AppError } from './errors';
 
 const API_BASE = String(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -32,10 +36,16 @@ async function request<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch (err) {
+    throw normalizeNetworkError(err);
+  }
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(error.message ?? 'Request failed');
+    const body = await response.json().catch(() => ({ message: response.statusText }));
+    throw normalizeHttpError(response.status, body, response.statusText);
   }
   if (response.status === 204) {
     return undefined as T;
@@ -314,4 +324,92 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }, token),
+
+  listHotelImages: (token: string, hotelId: number) =>
+    request<PropertyImage[]>(`/api/v1/admin/hotels/${hotelId}/images`, {}, token),
+
+  addHotelImage: (
+    token: string,
+    hotelId: number,
+    body: { url: string; caption?: string | null; sortOrder?: number; primary?: boolean },
+  ) =>
+    request<PropertyImage>(`/api/v1/admin/hotels/${hotelId}/images`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }, token),
+
+  deleteHotelImage: (token: string, hotelId: number, imageId: number) =>
+    request<void>(`/api/v1/admin/hotels/${hotelId}/images/${imageId}`, { method: 'DELETE' }, token),
+
+  setPrimaryHotelImage: (token: string, hotelId: number, imageId: number) =>
+    request<PropertyImage>(
+      `/api/v1/admin/hotels/${hotelId}/images/${imageId}/primary`,
+      { method: 'POST' },
+      token,
+    ),
+
+  uploadHotelImage: (
+    token: string,
+    hotelId: number,
+    file: File,
+    caption?: string,
+    primary?: boolean,
+  ) => uploadImage(`/api/v1/admin/hotels/${hotelId}/images/upload`, token, file, caption, primary),
+
+  listRoomImages: (token: string, roomId: number) =>
+    request<PropertyImage[]>(`/api/v1/admin/rooms/${roomId}/images`, {}, token),
+
+  addRoomImage: (
+    token: string,
+    roomId: number,
+    body: { url: string; caption?: string | null; sortOrder?: number; primary?: boolean },
+  ) =>
+    request<PropertyImage>(`/api/v1/admin/rooms/${roomId}/images`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }, token),
+
+  deleteRoomImage: (token: string, roomId: number, imageId: number) =>
+    request<void>(`/api/v1/admin/rooms/${roomId}/images/${imageId}`, { method: 'DELETE' }, token),
+
+  setPrimaryRoomImage: (token: string, roomId: number, imageId: number) =>
+    request<PropertyImage>(
+      `/api/v1/admin/rooms/${roomId}/images/${imageId}/primary`,
+      { method: 'POST' },
+      token,
+    ),
+
+  uploadRoomImage: (
+    token: string,
+    roomId: number,
+    file: File,
+    caption?: string,
+    primary?: boolean,
+  ) => uploadImage(`/api/v1/admin/rooms/${roomId}/images/upload`, token, file, caption, primary),
 };
+
+async function uploadImage(
+  path: string,
+  token: string,
+  file: File,
+  caption?: string,
+  primary?: boolean,
+): Promise<PropertyImage> {
+  const form = new FormData();
+  form.append('file', file);
+  if (caption) form.append('caption', caption);
+  if (primary != null) form.append('primary', String(primary));
+
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form });
+  } catch (err) {
+    throw normalizeNetworkError(err);
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ message: response.statusText }));
+    throw normalizeHttpError(response.status, body, response.statusText);
+  }
+  return response.json();
+}

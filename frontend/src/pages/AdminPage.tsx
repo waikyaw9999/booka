@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api';
+import { api, getErrorMessage } from '../lib/api';
 import { useAuthStore, useRagStore } from '../stores';
 import { RagChat } from '../components/RagChat';
 import { BlackoutDateManager } from '../components/BlackoutDateManager';
@@ -83,7 +83,7 @@ export function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ['room-board'] });
       setFeedback({ tone: 'success', text: `Booking #${id} updated to ${status.replace(/_/g, ' ')}.` });
     } catch (err) {
-      setFeedback({ tone: 'error', text: err instanceof Error ? err.message : 'Status update failed' });
+      setFeedback({ tone: 'error', text: getErrorMessage(err, 'Status update failed. Please try again.') });
     }
   }
 
@@ -107,7 +107,7 @@ export function AdminPage() {
     } catch (err) {
       addStaffMessage({
         role: 'assistant',
-        content: err instanceof Error ? err.message : 'Assistant unavailable',
+        content: getErrorMessage(err, 'Assistant unavailable. Please try again.'),
       });
     } finally {
       setRagLoading(false);

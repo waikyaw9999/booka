@@ -9,12 +9,15 @@ import com.booka.exception.BusinessException;
 import com.booka.exception.ResourceNotFoundException;
 import com.booka.repository.BookingRepository;
 import com.booka.repository.GuestRepository;
+import com.booka.repository.RoomImageRepository;
 import com.booka.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,11 +26,24 @@ public class FrontOfficeService {
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
     private final GuestRepository guestRepository;
+    private final RoomImageRepository roomImageRepository;
     private final HotelService hotelService;
 
     public List<RoomBoardItem> getRoomBoard(Long hotelId) {
         hotelService.findHotel(hotelId);
-        return roomRepository.findByHotelId(hotelId).stream().map(this::toBoardItem).toList();
+        List<Room> rooms = roomRepository.findByHotelId(hotelId);
+        Map<Long, String> primaryByRoom = Map.of();
+        if (!rooms.isEmpty()) {
+            primaryByRoom = roomImageRepository
+                    .findByRoomIdInAndPrimaryTrue(rooms.stream().map(Room::getId).toList())
+                    .stream()
+                    .collect(Collectors.toMap(
+                            img -> img.getRoomId(),
+                            img -> img.getUrl(),
+                            (a, b) -> a));
+        }
+        Map<Long, String> imageMap = primaryByRoom;
+        return rooms.stream().map(room -> toBoardItem(room, imageMap.get(room.getId()))).toList();
     }
 
     @Transactional
@@ -42,10 +58,14 @@ public class FrontOfficeService {
             throw new BusinessException("Room must be INSPECTING before CLEAN (or pass force=true)");
         }
         room.setHousekeepingStatus(next);
-        return toBoardItem(roomRepository.save(room));
+        Room saved = roomRepository.save(room);
+        String primaryUrl = roomImageRepository.findFirstByRoomIdAndPrimaryTrue(saved.getId())
+                .map(img -> img.getUrl())
+                .orElse(null);
+        return toBoardItem(saved, primaryUrl);
     }
 
-    private RoomBoardItem toBoardItem(Room room) {
+    private RoomBoardItem toBoardItem(Room room, String primaryImageUrl) {
         RoomType roomType = hotelService.findRoomType(room.getRoomTypeId());
         var current = bookingRepository.findActiveAssignedByRoomId(room.getId()).stream().findFirst();
         Long bookingId = null;
@@ -70,6 +90,7 @@ public class FrontOfficeService {
                 room.getNotes(),
                 bookingId,
                 guestName,
-                confirmation);
+                confirmation,
+                primaryImageUrl);
     }
 }

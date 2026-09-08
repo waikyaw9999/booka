@@ -16,6 +16,10 @@ spring:
           time_zone: UTC
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 server:
   port: 8080
@@ -33,6 +37,10 @@ booka:
   jwt:
     secret: ${JWT_SECRET:dev-secret-change-in-production-min-32-chars}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  upload:
+    dir: ${BOOKA_UPLOAD_DIR:uploads}
+    public-path: /uploads
+    max-file-size-bytes: ${BOOKA_UPLOAD_MAX_BYTES:5242880}
   groq:
     api-key: ${GROQ_API_KEY:}
     base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}

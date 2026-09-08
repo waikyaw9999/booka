@@ -15,9 +15,10 @@ Always align code and naming with this domain (hotels, rooms, room types, bookin
 - Validate business rules at the Service layer, not only in controllers or UI.
 
 ## Domain Concepts
-- **Hotel** — a property with address, amenities, policies, and room inventory.
+- **Hotel** — a property with address, amenities, policies, room inventory, and optional gallery images (`hotel_images`: url, caption, sort order, primary).
 - **Room Type** — category of room (e.g. Standard, Deluxe); defines capacity, base rate, and amenities.
-- **Room** — physical unit belonging to a room type; has inventory `status` (available, occupied, maintenance) and separate `housekeepingStatus` (clean, dirty, inspecting).
+- **Room** — physical unit belonging to a room type; has inventory `status` (available, occupied, maintenance), separate `housekeepingStatus` (clean, dirty, inspecting), and optional `room_images` for ops/display.
+- **Property / room image** — https URL (or local `/uploads` file) attached to a hotel or room; one primary image; sort order for gallery. Staff manage under admin image endpoints; guests see hotel images on Home and Hotel detail (Unsplash fallback when empty).
 - **Booking / Reservation** — guest stay for a date range; links guest, room type and optionally assigned room; has confirmation code, channel, and payment status.
 - **Guest** — person making or associated with a booking.
 - **Availability** — rooms or room types available for a given check-in/check-out range.
@@ -110,8 +111,9 @@ Always align code and naming with this domain (hotels, rooms, room types, bookin
   - Front Office room board with check-in, check-out, and room assignment actions.
   - Housekeeping board and maintenance ticket list/create/update.
   - Folio view with ability to post POS/F&B charges.
-  - CRUD flows for hotels, room types, rooms, rate management, and **blackout dates**.
+  - CRUD flows for hotels, room types, rooms, rate management, **blackout dates**, and **property/room images** (URL or optional `/uploads` file).
   - Blackout management UI: date-range picker, optional room-type scope, reason/note, list with delete action.
+  - Inventory image UI: hotel gallery + per-room images; guest HotelCard / HotelDetail use primary/gallery with Unsplash fallback.
 - Preserve in-progress booking state across navigation (e.g. dates, selected room) until submitted or cleared.
 
 ## RAG Assistant (Groq + OpenAI-Compatible API)

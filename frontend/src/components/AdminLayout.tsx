@@ -5,11 +5,11 @@ import { useAuthStore, useRagStore } from '../stores';
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', path: '/admin' },
   { id: 'front-office', label: 'Front Office', path: '/admin?tab=front-office' },
+  { id: 'inventory', label: 'Inventory', path: '/admin?tab=inventory' },
   { id: 'reservations', label: 'Reservations', path: '/admin?tab=reservations' },
   { id: 'housekeeping', label: 'Housekeeping', path: '/admin?tab=housekeeping' },
   { id: 'maintenance', label: 'Maintenance', path: '/admin?tab=maintenance' },
   { id: 'folios', label: 'Folios', path: '/admin?tab=folios' },
-  { id: 'inventory', label: 'Inventory', path: '/admin?tab=inventory' },
   { id: 'blackouts', label: 'Blackouts', path: '/admin?tab=blackouts' },
   { id: 'assistant', label: 'Assistant', path: '/admin?tab=assistant' },
 ] as const;
@@ -88,8 +88,8 @@ export function AdminLayout() {
 
   return (
     <div className="flex min-h-screen ops-canvas">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block">{sidebar}</div>
+      {/* Desktop sidebar — sticky so all NAV items stay reachable via overflow scroll */}
+      <div className="sticky top-0 hidden h-screen shrink-0 lg:block">{sidebar}</div>
 
       {/* Mobile drawer */}
       {sidebarOpen && (

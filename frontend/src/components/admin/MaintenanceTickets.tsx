@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, getErrorMessage } from '../../lib/api';
 import type { TicketPriority, TicketStatus } from '../../types';
 import { StatusPill, EmptyState, InlineAlert } from '../ui';
 
@@ -49,7 +49,7 @@ export function MaintenanceTickets({ token, hotelId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['room-board'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create ticket');
+      setError(getErrorMessage(err, 'Failed to create ticket. Please try again.'));
     }
   }
 
@@ -62,7 +62,7 @@ export function MaintenanceTickets({ token, hotelId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setSuccess(`Ticket #${id} → ${status.replace(/_/g, ' ')}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Update failed');
+      setError(getErrorMessage(err, 'Update failed. Please try again.'));
     }
   }
 
