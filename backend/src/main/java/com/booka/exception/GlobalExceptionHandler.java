@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
         String supported = ex.getSupportedHttpMethods() == null || ex.getSupportedHttpMethods().isEmpty()
                 ? ""
                 : " Supported: " + ex.getSupportedHttpMethods().stream()
-                        .map(Enum::name)
+                        .map(m -> m.name())
                         .collect(Collectors.joining(", ")) + ".";
         String message = "Request method '" + ex.getMethod() + "' is not supported." + supported;
         return build(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", message, request);
