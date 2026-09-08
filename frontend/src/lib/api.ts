@@ -17,7 +17,7 @@ import type {
   FolioLineType,
 } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+const API_BASE = String(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
 async function request<T>(
   path: string,

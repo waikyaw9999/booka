@@ -51,8 +51,10 @@ booka:
   channel:
     api-key: ${CHANNEL_API_KEY:}
   cors:
-    # Comma-separated. Prod must include the public site origin (browser sends Origin even on same-origin POSTs).
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost:80}
+    # Comma-separated origin *patterns* (Spring allowedOriginPatterns). Browsers send Origin on JSON POSTs
+    # even for same-origin /api via nginx — missing the public HTTPS origin yields CorsFilter 403.
+    # Override with CORS_ALLOWED_ORIGINS; defaults already cover booka.juneko.online + localhost.
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:https://booka.juneko.online,https://*.juneko.online,http://localhost:*,http://127.0.0.1:*}
 
 logging:
   level:

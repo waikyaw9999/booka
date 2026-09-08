@@ -32,7 +32,7 @@ Workflow tags use `secrets.DOCKER_USERNAME`; VPS `.env` must set the same `DOCKE
 - Publish only Caddy `80`/`443`; keep frontend and Postgres internal on the Compose network.
 - `DOMAIN` defaults to `booka.juneko.online` (set in VPS `.env` if overriding).
 - Frontend prod builds use empty `VITE_API_BASE_URL` (same-origin `/api` via nginx).
-- Backend needs `CORS_ALLOWED_ORIGINS` including the public HTTPS origin (e.g. `https://booka.juneko.online`) — CorsFilter 403s login otherwise.
+- Backend CORS uses `allowedOriginPatterns` via `CORS_ALLOWED_ORIGINS` (defaults include `https://booka.juneko.online` and `https://*.juneko.online`). Stale localhost-only VPS `.env` overrides defaults and causes CorsFilter **403 Invalid CORS request** on login.
 - After Compose/`Caddyfile` changes: `scp` to VPS — CI only pulls images.
 
 ## Rollout order

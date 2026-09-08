@@ -36,7 +36,7 @@ services:
       STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:5173/book?payment=cancelled}
       STRIPE_CURRENCY: ${STRIPE_CURRENCY:-usd}
       CHANNEL_API_KEY: ${CHANNEL_API_KEY:-dev-channel-key}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000,http://localhost:80}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://booka.juneko.online,https://*.juneko.online,http://localhost:*,http://127.0.0.1:*}
     depends_on:
       postgres:
         condition: service_healthy

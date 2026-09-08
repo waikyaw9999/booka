@@ -15,14 +15,15 @@ import java.util.List;
 public class CorsProperties {
 
     /**
-     * Comma-separated browser origins allowed by CORS
-     * (e.g. {@code https://booka.juneko.online,http://localhost:5173}).
+     * Comma-separated CORS origin <em>patterns</em> (Spring {@code allowedOriginPatterns}).
+     * Supports wildcards such as {@code https://*.juneko.online} and {@code http://localhost:*}.
+     * Env: {@code CORS_ALLOWED_ORIGINS}.
      */
-    private String allowedOrigins =
-            "http://localhost:5173,http://localhost:3000,http://localhost:80";
+    private String allowedOriginPatterns =
+            "https://booka.juneko.online,https://*.juneko.online,http://localhost:*,http://127.0.0.1:*";
 
-    public List<String> resolvedOrigins() {
-        return Arrays.stream(allowedOrigins.split(","))
+    public List<String> resolvedOriginPatterns() {
+        return Arrays.stream(allowedOriginPatterns.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
