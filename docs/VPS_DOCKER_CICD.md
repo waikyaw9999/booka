@@ -201,14 +201,17 @@ Firewall / security group: allow **22**, **80**, **443**. Do **not** open the da
 
 ## 7. HTTPS with Caddy (Booka: `booka.juneko.online`)
 
-Caddy terminates TLS (Let's Encrypt automatic) and reverse-proxies to the internal `frontend:80` service. The SPA nginx still proxies `/api/` → `backend:8080` on the Compose network.
+Caddy terminates TLS (Let's Encrypt automatic) and reverse-proxies to the internal `frontend:80` service. The SPA nginx still proxies `/api/` → `backend:8080` on the Compose network. Prod frontend images are built with an **empty** `VITE_API_BASE_URL`, so the browser calls same-origin `/api/...` (no cross-origin API host).
+
+Even with same-origin `/api`, Spring CORS must allow the public site Origin (`https://booka.juneko.online`): JSON login POSTs send `Origin`, and a missing allow-list entry is rejected with **403** by `CorsFilter` (CSRF is already disabled).
 
 ### Prerequisites
 
 1. **DNS A record** — point `booka.juneko.online` at your VPS public IP. Wait until it resolves (`dig` / `nslookup`) before bringing Caddy up, or cert issuance will fail.
 2. **Firewall** — allow inbound **80** and **443** (and **22** for SSH). Let's Encrypt HTTP-01 needs port 80 reachable from the internet.
 3. **DOMAIN** — in VPS `.env` set `DOMAIN=booka.juneko.online` (optional; Compose/Caddyfile default to that host). Keep `DOCKERHUB_USERNAME=...` as before.
-4. **Stripe URLs** (when enabling Checkout later) — use `https://booka.juneko.online/...` for `STRIPE_SUCCESS_URL` / `STRIPE_CANCEL_URL`.
+4. **CORS** — set `CORS_ALLOWED_ORIGINS=https://booka.juneko.online,http://localhost:5173` in VPS `.env` (Compose defaults to that if unset). After changing it: recreate `backend`.
+5. **Stripe URLs** (when enabling Checkout later) — use `https://booka.juneko.online/...` for `STRIPE_SUCCESS_URL` / `STRIPE_CANCEL_URL`.
 
 ### One-time: copy files and start
 
@@ -253,6 +256,7 @@ CI deploys still only `pull` + `up -d`. After changing Compose or `Caddyfile` in
 | Cert obtain fail / ACME error | DNS not pointing here, port 80 blocked, or rate limit | Fix A record; open 80/443; `docker logs` on the `caddy` service; retry after DNS propagates |
 | `address already in use` on 80/443 | Another process or old frontend published `80:80` | `docker compose ... down`; stop host nginx/apache; ensure frontend has **no** `ports:` in prod Compose |
 | Site 502 / blank | Frontend/backend not healthy | `docker compose ps` + `docker logs` on `frontend` / `backend` / `caddy` |
+| Login **403** on `/api/v1/auth/login` | CORS allow-list missing site Origin | Ensure Compose passes `CORS_ALLOWED_ORIGINS` including `https://booka.juneko.online`; recreate backend |
 | Still serving HTTP on bare IP | Expected — use the domain name so Caddy can match the site block and serve TLS | |
 
 Useful logs:
@@ -295,6 +299,7 @@ docker compose -f docker-compose.prod.yml logs -f caddy
 | Compose pulls old behavior | Image tag mismatch or cache | Align tags; `docker compose pull` |
 | Backend unhealthy forever | Bad env / DB / health path | `docker logs` on VPS; fix `.env` |
 | Frontend 502 on `/api` | nginx upstream name/port wrong | Match Compose service name + port |
+| Login / API **403** (esp. `POST /api/v1/auth/login`) | `CORS_ALLOWED_ORIGINS` missing the public Origin | Add `https://booka.juneko.online` to VPS `.env`, recreate backend; confirm frontend image built with empty `VITE_API_BASE_URL` |
 | HTTPS / cert issues | See §7 troubleshooting | DNS, firewall 80/443, no port conflict with Caddy |
 
 ---
