@@ -109,6 +109,12 @@ public class AvailabilityIntentDetector {
                     Intent.ROOM_TYPES, null, null, 2, false, null, roomTypeHint);
         }
 
+        // "rooms Dec 20-22 for 2 guests" has an exact stay but no "available" keyword.
+        if (!availabilityIntent && !roomTypeCatalog && hasExactStayRange(messageOnly, text)
+                && containsAny(messageLower, "room", "stay", "night", "guest", "book", "reserv")) {
+            availabilityIntent = true;
+        }
+
         if (!availabilityIntent) {
             return new ParsedAvailabilityQuery(Intent.FAQ, null, null, 2, false, null, roomTypeHint);
         }
@@ -195,6 +201,13 @@ public class AvailabilityIntentDetector {
                 || NATURAL_DAY_FIRST_RANGE.matcher(lower).find()
                 || MONTH.matcher(lower).find()
                 || ISO_RANGE.matcher(lower).find();
+    }
+
+    private boolean hasExactStayRange(String messageOnly, String text) {
+        return parseNaturalRange(messageOnly).isPresent()
+                || parseIsoRange(messageOnly).isPresent()
+                || parseNaturalRange(text).isPresent()
+                || parseIsoRange(text).isPresent();
     }
 
     private Optional<String> parseRoomTypeHint(String lower) {
