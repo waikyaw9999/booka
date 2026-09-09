@@ -83,10 +83,11 @@ public final class RagDtos {
             String hotelPath,
             List<BlackoutOption> blackouts,
             PropertySummary propertySummary,
-            BookingPeriodSummary bookingSummary
+            BookingPeriodSummary bookingSummary,
+            List<String> suggestedQuestions
     ) {
         public RagChatResponse(String answer, List<RagCitation> citations, boolean ragAvailable) {
-            this(answer, citations, ragAvailable, "FAQ", List.of(), null, List.of(), null, null);
+            this(answer, citations, ragAvailable, "FAQ", List.of(), null, List.of(), null, null, List.of());
         }
 
         public RagChatResponse(
@@ -96,7 +97,7 @@ public final class RagDtos {
                 String intent,
                 List<AvailabilityOption> availability,
                 String hotelPath) {
-            this(answer, citations, ragAvailable, intent, availability, hotelPath, List.of(), null, null);
+            this(answer, citations, ragAvailable, intent, availability, hotelPath, List.of(), null, null, List.of());
         }
 
         public RagChatResponse(
@@ -108,7 +109,21 @@ public final class RagDtos {
                 String hotelPath,
                 List<BlackoutOption> blackouts,
                 PropertySummary propertySummary) {
-            this(answer, citations, ragAvailable, intent, availability, hotelPath, blackouts, propertySummary, null);
+            this(answer, citations, ragAvailable, intent, availability, hotelPath, blackouts, propertySummary, null, List.of());
+        }
+
+        public RagChatResponse(
+                String answer,
+                List<RagCitation> citations,
+                boolean ragAvailable,
+                String intent,
+                List<AvailabilityOption> availability,
+                String hotelPath,
+                List<BlackoutOption> blackouts,
+                PropertySummary propertySummary,
+                BookingPeriodSummary bookingSummary) {
+            this(answer, citations, ragAvailable, intent, availability, hotelPath, blackouts, propertySummary,
+                    bookingSummary, List.of());
         }
     }
 

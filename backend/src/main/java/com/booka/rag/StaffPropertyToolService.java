@@ -44,11 +44,15 @@ public class StaffPropertyToolService {
         }
 
         String hotelName = hotelService.getHotel(hotelId != null ? hotelId : 1L).name();
+        // Range in the message must stay (from → exclusiveEnd) so confirmation can re-parse it.
         String answer = """
                 I can check bookings for %s with check-ins in %s (%s → %s).
 
-                Reply yes to confirm, or tell me a different month (e.g. "October 2026").
-                """.formatted(hotelName, sampleLabel, from, to).trim();
+                Reply yes to confirm, or tell me a different month (e.g. "October %d").
+                """.formatted(hotelName, sampleLabel, from, to, from.getYear()).trim();
+
+        String confirmQuestion = "Yes — check-ins in %s (%s → %s)".formatted(sampleLabel, from, to);
+        String namedMonthQuestion = "How many bookings in %s?".formatted(sampleLabel);
 
         return new RagChatResponse(
                 answer,
@@ -59,7 +63,8 @@ public class StaffPropertyToolService {
                 null,
                 List.of(),
                 null,
-                null);
+                null,
+                List.of(confirmQuestion, namedMonthQuestion));
     }
 
     public RagChatResponse answerBookings(Long hotelId, LocalDate from, LocalDate to, String sampleLabel) {

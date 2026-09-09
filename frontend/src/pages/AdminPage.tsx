@@ -103,6 +103,7 @@ export function AdminPage() {
         blackouts: res.blackouts,
         propertySummary: res.propertySummary,
         bookingSummary: res.bookingSummary,
+        suggestedQuestions: res.suggestedQuestions,
       });
     } catch (err) {
       addStaffMessage({

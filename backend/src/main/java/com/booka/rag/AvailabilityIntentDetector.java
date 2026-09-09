@@ -14,15 +14,40 @@ import java.util.regex.Pattern;
 @Component
 public class AvailabilityIntentDetector {
 
+    private static final String MONTH_NAME =
+            "january|february|march|april|may|june|july|august|september|october|november|december|"
+                    + "jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec";
+
     private static final Pattern ISO_RANGE = Pattern.compile(
             "(\\d{4}-\\d{2}-\\d{2}).{0,20}?(\\d{4}-\\d{2}-\\d{2})",
+            Pattern.CASE_INSENSITIVE);
+    /** e.g. "December 20 to 22", "Dec 20-22", "December 20 to 22 2026" */
+    private static final Pattern NATURAL_SAME_MONTH_RANGE = Pattern.compile(
+            "\\b(" + MONTH_NAME + ")\\s+(\\d{1,2})(?:st|nd|rd|th)?"
+                    + "\\s*(?:to|-|–|—|through|thru|until|till)\\s*"
+                    + "(\\d{1,2})(?:st|nd|rd|th)?"
+                    + "(?:\\s*,?\\s*(\\d{4}))?",
+            Pattern.CASE_INSENSITIVE);
+    /** e.g. "December 20 to January 2", "Dec 20 to Jan 2 2027" */
+    private static final Pattern NATURAL_CROSS_MONTH_RANGE = Pattern.compile(
+            "\\b(" + MONTH_NAME + ")\\s+(\\d{1,2})(?:st|nd|rd|th)?"
+                    + "\\s*(?:to|-|–|—|through|thru|until|till)\\s*"
+                    + "(" + MONTH_NAME + ")\\s+(\\d{1,2})(?:st|nd|rd|th)?"
+                    + "(?:\\s*,?\\s*(\\d{4}))?",
+            Pattern.CASE_INSENSITIVE);
+    /** e.g. "20 to 22 December", "20-22 Dec 2026" */
+    private static final Pattern NATURAL_DAY_FIRST_RANGE = Pattern.compile(
+            "\\b(\\d{1,2})(?:st|nd|rd|th)?"
+                    + "\\s*(?:to|-|–|—|through|thru|until|till)\\s*"
+                    + "(\\d{1,2})(?:st|nd|rd|th)?"
+                    + "\\s+(" + MONTH_NAME + ")"
+                    + "(?:\\s*,?\\s*(\\d{4}))?",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern GUESTS = Pattern.compile(
             "(\\d+)\\s*(?:guest|guests|people|adults|persons)",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern MONTH = Pattern.compile(
-            "\\b(january|february|march|april|may|june|july|august|september|october|november|december|"
-                    + "jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\b(?:\\s+(\\d{4}))?",
+            "\\b(" + MONTH_NAME + ")\\b(?:\\s+(\\d{4}))?",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern ROOM_TYPE_HINT = Pattern.compile(
             "\\b(standard|deluxe|suite|twin|cabin|pavilion|heritage|classic|harbour|harbor|skyline|"
@@ -100,6 +125,18 @@ public class AvailabilityIntentDetector {
             }
         }
 
+        // Prefer exact natural ranges ("December 20 to 22") over month-only samples.
+        Optional<LocalDate[]> natural = parseNaturalRange(messageOnly)
+                .or(() -> parseNaturalRange(text));
+        if (natural.isPresent()) {
+            LocalDate in = natural.get()[0];
+            LocalDate out = natural.get()[1];
+            if (in.isBefore(out)) {
+                return new ParsedAvailabilityQuery(
+                        Intent.AVAILABILITY, in, out, guests, false, null, roomTypeHint);
+            }
+        }
+
         Optional<YearMonth> month = parseMonth(text);
         if (month.isPresent()) {
             YearMonth ym = month.get();
@@ -153,7 +190,11 @@ public class AvailabilityIntentDetector {
     }
 
     private boolean hasDateSignal(String lower) {
-        return MONTH.matcher(lower).find() || ISO_RANGE.matcher(lower).find();
+        return NATURAL_SAME_MONTH_RANGE.matcher(lower).find()
+                || NATURAL_CROSS_MONTH_RANGE.matcher(lower).find()
+                || NATURAL_DAY_FIRST_RANGE.matcher(lower).find()
+                || MONTH.matcher(lower).find()
+                || ISO_RANGE.matcher(lower).find();
     }
 
     private Optional<String> parseRoomTypeHint(String lower) {
@@ -191,6 +232,88 @@ public class AvailabilityIntentDetector {
             });
         }
         return Optional.empty();
+    }
+
+    private Optional<LocalDate[]> parseNaturalRange(String text) {
+        if (text == null || text.isBlank()) {
+            return Optional.empty();
+        }
+
+        Matcher cross = NATURAL_CROSS_MONTH_RANGE.matcher(text);
+        if (cross.find()) {
+            Month startMonth = Month.valueOf(normalizeMonth(cross.group(1)));
+            int startDay = Integer.parseInt(cross.group(2));
+            Month endMonth = Month.valueOf(normalizeMonth(cross.group(3)));
+            int endDay = Integer.parseInt(cross.group(4));
+            Integer yearHint = cross.group(5) != null ? Integer.parseInt(cross.group(5)) : null;
+            return buildStay(startMonth, startDay, endMonth, endDay, yearHint);
+        }
+
+        Matcher same = NATURAL_SAME_MONTH_RANGE.matcher(text);
+        if (same.find()) {
+            Month month = Month.valueOf(normalizeMonth(same.group(1)));
+            int startDay = Integer.parseInt(same.group(2));
+            int endDay = Integer.parseInt(same.group(3));
+            Integer yearHint = same.group(4) != null ? Integer.parseInt(same.group(4)) : null;
+            return buildStay(month, startDay, month, endDay, yearHint);
+        }
+
+        Matcher dayFirst = NATURAL_DAY_FIRST_RANGE.matcher(text);
+        if (dayFirst.find()) {
+            int startDay = Integer.parseInt(dayFirst.group(1));
+            int endDay = Integer.parseInt(dayFirst.group(2));
+            Month month = Month.valueOf(normalizeMonth(dayFirst.group(3)));
+            Integer yearHint = dayFirst.group(4) != null ? Integer.parseInt(dayFirst.group(4)) : null;
+            return buildStay(month, startDay, month, endDay, yearHint);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Builds an exclusive check-out stay [checkIn, checkOut). Guest phrases like
+     * "December 20 to 22" are treated as nights of the 20th and 21st → checkout on the 22nd.
+     */
+    private Optional<LocalDate[]> buildStay(
+            Month startMonth, int startDay, Month endMonth, int endDay, Integer yearHint) {
+        try {
+            int startYear = resolveYear(startMonth, startDay, yearHint);
+            LocalDate checkIn = LocalDate.of(startYear, startMonth, startDay);
+
+            int endYear = yearHint != null
+                    ? yearHint
+                    : (endMonth.getValue() < startMonth.getValue() ? startYear + 1 : startYear);
+            // If end month/day is before check-in in the same resolved year, roll end year.
+            LocalDate tentativeEnd = LocalDate.of(endYear, endMonth, endDay);
+            if (!tentativeEnd.isAfter(checkIn)) {
+                tentativeEnd = LocalDate.of(endYear + 1, endMonth, endDay);
+            }
+            // "20 to 22" means checkout on the 22nd (exclusive end already matches guest wording).
+            LocalDate checkOut = tentativeEnd;
+            if (!checkIn.isBefore(checkOut)) {
+                return Optional.empty();
+            }
+            return Optional.of(new LocalDate[]{checkIn, checkOut});
+        } catch (Exception ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private int resolveYear(Month month, int day, Integer yearHint) {
+        if (yearHint != null) {
+            return yearHint;
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate candidate;
+        try {
+            candidate = LocalDate.of(today.getYear(), month, day);
+        } catch (Exception e) {
+            candidate = YearMonth.of(today.getYear(), month).atEndOfMonth();
+        }
+        if (candidate.isBefore(today)) {
+            return today.getYear() + 1;
+        }
+        return today.getYear();
     }
 
     private Optional<YearMonth> parseMonth(String text) {

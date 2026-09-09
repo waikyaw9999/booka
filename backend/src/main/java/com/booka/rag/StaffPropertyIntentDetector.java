@@ -23,7 +23,7 @@ public class StaffPropertyIntentDetector {
             "\\b(standard|deluxe|suite|executive|family|premium)\\b",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern CONFIRM = Pattern.compile(
-            "^(yes|y|yeah|yep|yup|ok|okay|sure|confirm|confirmed|please do|go ahead)[.!\\s]*$",
+            "^(yes|y|yeah|yep|yup|ok|okay|sure|confirm|confirmed|please do|go ahead)\\b.*$",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern PERIOD_IN_HISTORY = Pattern.compile(
             "check-ins in ([A-Za-z]+ \\d{4}) \\((\\d{4}-\\d{2}-\\d{2}) → (\\d{4}-\\d{2}-\\d{2})\\)",

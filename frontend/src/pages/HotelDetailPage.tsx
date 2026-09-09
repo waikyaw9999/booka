@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../lib/api';
 import { hotelDisplayImage, resolveMediaUrl } from '../lib/media';
@@ -11,20 +11,29 @@ import { EmptyState, InlineAlert } from '../components/ui';
 export function HotelDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const hotelId = Number(id);
   const { draft, setDraft } = useBookingStore();
+  const paramCheckIn = searchParams.get('checkIn');
+  const paramCheckOut = searchParams.get('checkOut');
+  const paramGuests = searchParams.get('guests');
+  const paramRoomTypeId = searchParams.get('roomTypeId');
+  const highlightRoomTypeId = paramRoomTypeId ? Number(paramRoomTypeId) : null;
+
   const [checkIn, setCheckIn] = useState(
-    searchParams.get('checkIn') || draft.checkInDate,
+    paramCheckIn || draft.checkInDate,
   );
   const [checkOut, setCheckOut] = useState(
-    searchParams.get('checkOut') || draft.checkOutDate,
+    paramCheckOut || draft.checkOutDate,
   );
   const [numGuests, setNumGuests] = useState(
-    Number(searchParams.get('guests')) || draft.numGuests,
+    Number(paramGuests) || draft.numGuests || 2,
   );
   const [searching, setSearching] = useState(false);
   const [availability, setAvailability] = useState<Awaited<ReturnType<typeof api.checkAvailability>> | null>(null);
   const [searchError, setSearchError] = useState('');
+  const availabilityRef = useRef<HTMLElement | null>(null);
+  const lastAutoSearchKey = useRef<string>('');
 
   const { data: hotel, isLoading } = useQuery({
     queryKey: ['hotel', hotelId],
@@ -38,23 +47,71 @@ export function HotelDetailPage() {
     enabled: !Number.isNaN(hotelId),
   });
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
+  // Keep form fields in sync when RAG "View & book" updates query params on this page.
+  useEffect(() => {
+    if (paramCheckIn) setCheckIn(paramCheckIn);
+    if (paramCheckOut) setCheckOut(paramCheckOut);
+    if (paramGuests) {
+      const n = Number(paramGuests);
+      if (!Number.isNaN(n) && n > 0) setNumGuests(n);
+    }
+  }, [paramCheckIn, paramCheckOut, paramGuests]);
+
+  async function runAvailabilitySearch(
+    nextCheckIn: string,
+    nextCheckOut: string,
+    nextGuests: number,
+    hotelName: string | null,
+  ) {
+    if (!nextCheckIn || !nextCheckOut || Number.isNaN(hotelId)) return;
     setSearchError('');
     setSearching(true);
     try {
       const result = await api.checkAvailability(hotelId, {
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
-        numGuests,
+        checkInDate: nextCheckIn,
+        checkOutDate: nextCheckOut,
+        numGuests: nextGuests,
       });
       setAvailability(result);
-      setDraft({ hotelId, hotelName: hotel?.name ?? null, checkInDate: checkIn, checkOutDate: checkOut, numGuests });
+      setDraft({
+        hotelId,
+        hotelName,
+        checkInDate: nextCheckIn,
+        checkOutDate: nextCheckOut,
+        numGuests: nextGuests,
+      });
     } catch (err) {
       setSearchError(getErrorMessage(err, 'Search failed. Please try again.'));
     } finally {
       setSearching(false);
     }
+  }
+
+  // Auto-run availability when deep-linked from the RAG widget.
+  useEffect(() => {
+    const inDate = paramCheckIn || checkIn;
+    const outDate = paramCheckOut || checkOut;
+    const guests = paramGuests ? Number(paramGuests) : numGuests;
+    if (!paramCheckIn || !paramCheckOut || !hotel || Number.isNaN(hotelId)) return;
+    if (!inDate || !outDate || Number.isNaN(guests) || guests < 1) return;
+
+    const key = `${hotelId}|${inDate}|${outDate}|${guests}`;
+    if (lastAutoSearchKey.current === key) return;
+    lastAutoSearchKey.current = key;
+
+    void runAvailabilitySearch(inDate, outDate, guests, hotel.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only when URL deep-link params / hotel load
+  }, [paramCheckIn, paramCheckOut, paramGuests, hotel, hotelId]);
+
+  useEffect(() => {
+    if (location.hash !== '#availability') return;
+    const el = availabilityRef.current ?? document.getElementById('availability');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [location.hash, location.search, availability]);
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    await runAvailabilitySearch(checkIn, checkOut, numGuests, hotel?.name ?? null);
   }
 
   function selectRoom(room: NonNullable<typeof availability>[0]) {
@@ -135,7 +192,7 @@ export function HotelDetailPage() {
 
         {blackouts && <BlackoutNotice blackouts={blackouts} />}
 
-        <section>
+        <section id="availability" ref={availabilityRef}>
           <h2 className="font-display text-2xl font-bold text-ink">Check availability</h2>
           <form
             onSubmit={handleSearch}
@@ -200,10 +257,14 @@ export function HotelDetailPage() {
               <ul className="divide-y divide-sand/80 overflow-hidden rounded-2xl border border-sand/80 bg-white/70">
                 {availability.map((item) => {
                   const roomImage = resolveMediaUrl(item.roomType.primaryImageUrl);
+                  const highlighted =
+                    highlightRoomTypeId != null && item.roomType.id === highlightRoomTypeId;
                   return (
                   <li
                     key={item.roomType.id}
-                    className="flex flex-col gap-4 p-5 transition hover:bg-fog/50 md:flex-row md:items-center md:justify-between"
+                    className={`flex flex-col gap-4 p-5 transition hover:bg-fog/50 md:flex-row md:items-center md:justify-between ${
+                      highlighted ? 'bg-moss/10 ring-2 ring-inset ring-moss/40' : ''
+                    }`}
                   >
                     <div className="flex min-w-0 flex-1 gap-4">
                       {roomImage && (

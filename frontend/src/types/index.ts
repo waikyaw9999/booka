@@ -215,6 +215,7 @@ export interface RagChatResponse {
   blackouts?: BlackoutOption[];
   propertySummary?: PropertySummary | null;
   bookingSummary?: BookingPeriodSummary | null;
+  suggestedQuestions?: string[];
 }
 
 export interface RagMessage {
@@ -226,6 +227,7 @@ export interface RagMessage {
   blackouts?: BlackoutOption[];
   propertySummary?: PropertySummary | null;
   bookingSummary?: BookingPeriodSummary | null;
+  suggestedQuestions?: string[];
 }
 
 export interface PageResponse<T> {

@@ -28,6 +28,7 @@ export function PublicRagWidget({ hotelId }: PublicRagWidgetProps) {
         blackouts: res.blackouts,
         propertySummary: res.propertySummary,
         bookingSummary: res.bookingSummary,
+        suggestedQuestions: res.suggestedQuestions,
       });
     } catch (err) {
       addPublicMessage({

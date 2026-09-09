@@ -31,21 +31,54 @@ public class AvailabilityToolService {
     }
 
     public RagChatResponse clarifyDates(int numGuests, String roomTypeHint) {
+        int guests = Math.max(1, numGuests);
+        LocalDate checkIn = LocalDate.now().plusDays(7);
+        LocalDate checkOut = checkIn.plusDays(2);
+        LocalDate altIn = LocalDate.now().plusDays(14);
+        LocalDate altOut = altIn.plusDays(2);
+
         String roomBit = roomTypeHint != null && !roomTypeHint.isBlank()
-                ? " for " + roomTypeHint + " rooms"
+                ? " for " + capitalize(roomTypeHint) + " rooms"
                 : "";
+        String primary = availabilityQuestion(roomTypeHint, checkIn, checkOut, guests);
+        String alternate = availabilityQuestion(roomTypeHint, altIn, altOut, guests);
+
         String answer = """
                 I can check live room availability%s for you.
                 Please share your check-in and check-out dates (YYYY-MM-DD), and number of guests.
-                Example: "Available rooms from 2026-10-10 to 2026-10-12 for 2 guests"
+
+                Or tap a date range below to search:
                 """.formatted(roomBit).trim();
+
         return new RagChatResponse(
                 answer,
                 List.of(),
                 groqChatService.isConfigured(),
                 "CLARIFY_DATES",
                 List.of(),
-                null);
+                null,
+                List.of(),
+                null,
+                null,
+                List.of(primary, alternate));
+    }
+
+    private static String availabilityQuestion(
+            String roomTypeHint, LocalDate checkIn, LocalDate checkOut, int guests) {
+        if (roomTypeHint != null && !roomTypeHint.isBlank()) {
+            return "Available %s rooms from %s to %s for %d guests"
+                    .formatted(capitalize(roomTypeHint), checkIn.format(ISO), checkOut.format(ISO), guests);
+        }
+        return "Available rooms from %s to %s for %d guests"
+                .formatted(checkIn.format(ISO), checkOut.format(ISO), guests);
+    }
+
+    private static String capitalize(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return raw;
+        }
+        String s = raw.trim().toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
     public RagChatResponse listRoomTypes(Long hotelId, String roomTypeHint) {
@@ -191,10 +224,27 @@ public class AvailabilityToolService {
             facts.append('\n');
         }
 
-        String hotelPath = hotelId != null
-                ? "/hotels/" + hotelId + "?checkIn=" + checkIn.format(ISO)
-                + "&checkOut=" + checkOut.format(ISO) + "&guests=" + numGuests
-                : null;
+        String hotelPath = null;
+        if (hotelId != null) {
+            hotelPath = "/hotels/" + hotelId + "?checkIn=" + checkIn.format(ISO)
+                    + "&checkOut=" + checkOut.format(ISO) + "&guests=" + numGuests
+                    + "#availability";
+        } else {
+            Long soleHotelId = null;
+            for (AvailabilityOption o : options) {
+                if (soleHotelId == null) {
+                    soleHotelId = o.hotelId();
+                } else if (!soleHotelId.equals(o.hotelId())) {
+                    soleHotelId = null;
+                    break;
+                }
+            }
+            if (soleHotelId != null) {
+                hotelPath = "/hotels/" + soleHotelId + "?checkIn=" + checkIn.format(ISO)
+                        + "&checkOut=" + checkOut.format(ISO) + "&guests=" + numGuests
+                        + "#availability";
+            }
+        }
 
         String answer = buildAnswer(
                 facts.toString(), options, sampleDates, sampleLabel, checkIn, checkOut, numGuests, roomTypeHint, hotelId == null);
@@ -203,13 +253,23 @@ public class AvailabilityToolService {
                 "Inventory API",
                 hotelId));
 
+        List<String> suggested = List.of();
+        if (sampleDates) {
+            // Offer the exact sample range as a clickable follow-up question.
+            suggested = List.of(availabilityQuestion(roomTypeHint, checkIn, checkOut, numGuests));
+        }
+
         return new RagChatResponse(
                 answer,
                 citations,
                 groqChatService.isConfigured(),
                 "AVAILABILITY",
                 options,
-                hotelPath);
+                hotelPath,
+                List.of(),
+                null,
+                null,
+                suggested);
     }
 
     static boolean matchesRoomType(String roomTypeName, String hint) {
