@@ -14,6 +14,11 @@ export function BookingPage() {
   const [confirmed, setConfirmed] = useState<{
     bookingId: number;
     confirmationCode?: string;
+    hotelName?: string | null;
+    roomName?: string;
+    dates?: string;
+    guests?: number;
+    total?: number;
   } | null>(null);
 
   const paymentState = searchParams.get('payment');
@@ -45,6 +50,7 @@ export function BookingPage() {
   }
 
   if (confirmed) {
+    const code = confirmed.confirmationCode ?? `#${confirmed.bookingId}`;
     return (
       <div className="mx-auto max-w-lg px-4 py-24 text-center space-y-5 animate-panel">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-moss/15 text-2xl text-moss">
@@ -55,13 +61,22 @@ export function BookingPage() {
         </p>
         <h1 className="font-display text-3xl font-bold text-forest">You&apos;re all set</h1>
         <p className="text-ink/65">
-          Confirmation code{' '}
-          <span className="font-semibold text-ink">
-            {confirmed.confirmationCode ?? `#${confirmed.bookingId}`}
-          </span>
+          Save your confirmation code{' '}
+          <span className="font-semibold text-ink">{code}</span>
         </p>
+        {(confirmed.hotelName || confirmed.dates) && (
+          <div className="surface mx-auto max-w-sm space-y-2 p-4 text-left text-sm">
+            {confirmed.hotelName && <Row label="Hotel" value={confirmed.hotelName} />}
+            {confirmed.roomName && <Row label="Room" value={confirmed.roomName} />}
+            {confirmed.dates && <Row label="Dates" value={confirmed.dates} />}
+            {confirmed.guests != null && <Row label="Guests" value={String(confirmed.guests)} />}
+            {confirmed.total != null && (
+              <Row label="Total due at property" value={`$${confirmed.total.toFixed(2)}`} />
+            )}
+          </div>
+        )}
         <p className="text-xs text-ink/45">
-          Online payment is deferred — pay at the property or when Stripe Checkout is enabled.
+          Your stay is confirmed. Pay at the property on arrival — no online payment required.
         </p>
         <button onClick={() => navigate('/')} className="btn-primary">
           Back to home
@@ -105,12 +120,17 @@ export function BookingPage() {
         guestFullName: draft.guestFullName,
         guestPhone: draft.guestPhone || undefined,
       });
-      // Stripe Checkout skipped for now — booking is already CONFIRMED + N_A on the server.
-      clearDraft();
+      // Stripe Checkout deferred — booking is already CONFIRMED + N_A on the server.
       setConfirmed({
         bookingId: booking.id,
         confirmationCode: booking.confirmationCode,
+        hotelName: draft.hotelName,
+        roomName: selectedRoomType!.roomType.name,
+        dates: `${draft.checkInDate} → ${draft.checkOutDate}`,
+        guests: draft.numGuests,
+        total: selectedRoomType!.totalPrice + selectedRoomType!.totalPrice * 0.1,
       });
+      clearDraft();
     } catch (err) {
       setError(getErrorMessage(err, 'Booking failed. Please try again.'));
     } finally {
@@ -144,10 +164,10 @@ export function BookingPage() {
         <Row label="Dates" value={`${draft.checkInDate} → ${draft.checkOutDate}`} />
         <Row label="Guests" value={String(draft.numGuests)} />
         <div className="my-2 h-px bg-sand" />
-        <Row label="Subtotal" value={`$${selectedRoomType.totalPrice.toFixed(2)}`} />
+        <Row label="Room subtotal" value={`$${selectedRoomType.totalPrice.toFixed(2)}`} />
         <Row label="Tax (10%)" value={`$${tax.toFixed(2)}`} />
         <p className="flex items-center justify-between pt-1 font-display text-xl font-bold text-forest">
-          <span>Total</span>
+          <span>Total due at property</span>
           <span>${(selectedRoomType.totalPrice + tax).toFixed(2)}</span>
         </p>
       </section>
@@ -183,8 +203,11 @@ export function BookingPage() {
         </div>
         {error && <InlineAlert tone="error">{error}</InlineAlert>}
         <button type="submit" disabled={loading} className="btn-primary w-full py-3">
-          {loading ? 'Confirming…' : 'Confirm booking'}
+          {loading ? 'Confirming…' : 'Confirm stay · pay at property'}
         </button>
+        <p className="text-center text-xs text-ink/45">
+          You will receive a confirmation code instantly. Payment is collected at the hotel.
+        </p>
       </form>
     </div>
   );
@@ -251,7 +274,7 @@ function PaymentConfirming({ bookingId, onHome }: { bookingId: number; onHome: (
       </h1>
       <p className="text-ink/65">{status}</p>
       <p className="text-xs text-ink/45">
-        Confirmation is finalized by Stripe webhooks when Checkout is enabled.
+        If this takes more than a minute, return home and check your confirmation email or try again.
       </p>
       <button onClick={onHome} className="btn-primary">
         Back to home

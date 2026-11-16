@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
 import { useAuthStore, useRagStore } from '../stores';
 
 const NAV = [
@@ -24,8 +26,15 @@ export function AdminLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  const { data: hotel } = useQuery({
+    queryKey: ['hotel', user.hotelId],
+    queryFn: () => api.getHotel(user.hotelId!),
+    enabled: user.hotelId != null,
+  });
+
   const params = new URLSearchParams(location.search);
   const activeTab = params.get('tab') ?? 'dashboard';
+  const propertyLabel = hotel?.name ?? (user.hotelId ? `Property #${user.hotelId}` : 'All properties');
 
   function handleLogout() {
     clearStaffMessages();
@@ -41,9 +50,7 @@ export function AdminLayout() {
         <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/90">
           Operations
         </p>
-        <p className="mt-3 truncate text-sm text-sand/75">
-          {user.hotelId ? `Property #${user.hotelId}` : 'All properties'}
-        </p>
+        <p className="mt-3 truncate text-sm text-sand/75">{propertyLabel}</p>
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">

@@ -53,14 +53,14 @@ export function HomePage() {
             </p>
           </div>
           <p className="max-w-xs text-sm text-ink/50 sm:text-right">
-            Live inventory · Secure checkout · Concierge help on every page
+            Live inventory · Confirm now, pay at property · Concierge help
           </p>
         </div>
 
         {isLoading && <p className="text-ink/50">Loading stays…</p>}
         {error && (
           <InlineAlert tone="error">
-            Could not load hotels. Make sure the backend is running on port 8080.
+            Could not load stays right now. Please refresh and try again.
           </InlineAlert>
         )}
 

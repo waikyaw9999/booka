@@ -35,7 +35,17 @@ export function HotelDetailPage() {
   const availabilityRef = useRef<HTMLElement | null>(null);
   const lastAutoSearchKey = useRef<string>('');
 
-  const { data: hotel, isLoading } = useQuery({
+  const today = new Date().toISOString().slice(0, 10);
+  const checkoutMin = checkIn
+    ? new Date(new Date(checkIn).getTime() + 86400000).toISOString().slice(0, 10)
+    : today;
+
+  const {
+    data: hotel,
+    isLoading,
+    isError: hotelLoadError,
+    error: hotelError,
+  } = useQuery({
     queryKey: ['hotel', hotelId],
     queryFn: () => api.getHotel(hotelId),
     enabled: !Number.isNaN(hotelId),
@@ -121,10 +131,33 @@ export function HotelDetailPage() {
   if (isLoading) {
     return <p className="py-24 text-center text-ink/50">Loading stay…</p>;
   }
+  if (hotelLoadError) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-24">
+        <EmptyState
+          title="Couldn’t load this stay"
+          description={getErrorMessage(hotelError, 'Please refresh and try again.')}
+          action={
+            <Link to="/" className="btn-primary inline-flex">
+              Back to stays
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
   if (!hotel) {
     return (
       <div className="mx-auto max-w-lg px-4 py-24">
-        <EmptyState title="Hotel not found" description="This property may have been removed." />
+        <EmptyState
+          title="Stay not found"
+          description="This property may have been removed or the link is incorrect."
+          action={
+            <Link to="/" className="btn-primary inline-flex">
+              Browse stays
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -203,8 +236,18 @@ export function HotelDetailPage() {
               <input
                 type="date"
                 required
+                min={today}
                 value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setCheckIn(next);
+                  if (checkOut && checkOut <= next) {
+                    const dayAfter = new Date(new Date(next).getTime() + 86400000)
+                      .toISOString()
+                      .slice(0, 10);
+                    setCheckOut(dayAfter);
+                  }
+                }}
                 className="input-field"
               />
             </div>
@@ -213,6 +256,7 @@ export function HotelDetailPage() {
               <input
                 type="date"
                 required
+                min={checkoutMin}
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
                 className="input-field"
@@ -288,12 +332,12 @@ export function HotelDetailPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-5 md:flex-col md:items-end md:gap-2">
                       <div className="md:text-right">
-                        <p className="text-xs uppercase tracking-wide text-ink/45">Total stay</p>
+                        <p className="text-xs uppercase tracking-wide text-ink/45">Room subtotal</p>
                         <p className="font-display text-2xl font-bold text-forest">
                           ${item.totalPrice.toFixed(2)}
                         </p>
                         <p className="text-xs text-ink/50">
-                          ${item.nightlyRate.toFixed(2)} / night
+                          ${item.nightlyRate.toFixed(2)} / night · tax at checkout
                         </p>
                       </div>
                       <Link

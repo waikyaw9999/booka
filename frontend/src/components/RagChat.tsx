@@ -274,7 +274,7 @@ function AvailabilityCards({
             </div>
             <div className="mt-0.5 text-ink/55">
               {o.checkInDate} → {o.checkOutDate} · {o.availableCount} left · $
-              {o.totalPrice.toFixed(2)} total
+              {o.totalPrice.toFixed(2)} room subtotal
             </div>
             <Link
               to={href}

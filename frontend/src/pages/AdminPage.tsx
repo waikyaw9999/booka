@@ -378,7 +378,12 @@ function ReservationsTable({
                 <th>Channel</th>
                 <th>Pay</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>
+                  <span className="block">Override</span>
+                  <span className="font-normal normal-case tracking-normal text-ink/40">
+                    Prefer Front Office for check-in/out
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -410,6 +415,7 @@ function ReservationsTable({
                       value={b.status}
                       onChange={(e) => onStatusChange(b.id, e.target.value as BookingStatus)}
                       className="input-field !py-1.5 !px-2 text-xs"
+                      title="Manual override — use Front Office for arrivals and departures"
                     >
                       <option value="PENDING">PENDING</option>
                       <option value="CONFIRMED">CONFIRMED</option>

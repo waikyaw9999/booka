@@ -48,10 +48,12 @@ export function LoginPage() {
             Sign in for front office, housekeeping, folios, and the staff assistant — separate from
             the guest booking experience.
           </p>
-          <p className="text-sm text-ink/45">
-            Demo credentials: <span className="font-medium text-ink/70">admin@booka.com</span> /{' '}
-            <span className="font-medium text-ink/70">password</span>
-          </p>
+          {import.meta.env.DEV && (
+            <p className="text-sm text-ink/45">
+              Local demo: <span className="font-medium text-ink/70">admin@booka.com</span> /{' '}
+              <span className="font-medium text-ink/70">password</span>
+            </p>
+          )}
           <Link to="/" className="btn-ghost inline-flex !px-0 text-sm">
             ← Back to guest site
           </Link>

@@ -132,6 +132,7 @@ export function RoomBoard({ token }: Props) {
             <p className="text-sm text-ink/50">Select a room for guest details and actions.</p>
           ) : (
             <RoomDetail
+              token={token}
               room={selected}
               onCheckIn={checkIn}
               onCheckOut={checkOut}
@@ -145,11 +146,13 @@ export function RoomBoard({ token }: Props) {
 }
 
 function RoomDetail({
+  token,
   room,
   onCheckIn,
   onCheckOut,
   onAssign,
 }: {
+  token: string;
   room: RoomBoardItem;
   onCheckIn: (room: RoomBoardItem, force?: boolean) => Promise<void>;
   onCheckOut: (room: RoomBoardItem) => Promise<void>;
@@ -209,44 +212,66 @@ function RoomDetail({
       </div>
 
       {!room.currentBookingId && room.status === 'AVAILABLE' && (
-        <AssignForm roomId={room.id} onAssign={onAssign} />
+        <AssignForm token={token} roomId={room.id} onAssign={onAssign} />
       )}
     </div>
   );
 }
 
 function AssignForm({
+  token,
   roomId,
   onAssign,
 }: {
+  token: string;
   roomId: number;
   onAssign: (bookingId: number, roomId: number) => Promise<void>;
 }) {
+  const [busy, setBusy] = useState(false);
+  const [localError, setLocalError] = useState('');
+
   return (
     <form
       className="space-y-2 border-t border-sand/70 pt-3"
       onSubmit={async (e) => {
         e.preventDefault();
+        setLocalError('');
         const fd = new FormData(e.currentTarget);
-        const bookingId = Number(fd.get('bookingId'));
-        if (!bookingId) return;
-        await onAssign(bookingId, roomId);
-        e.currentTarget.reset();
+        const raw = String(fd.get('bookingRef') ?? '').trim();
+        if (!raw) return;
+        setBusy(true);
+        try {
+          let bookingId = Number(raw);
+          if (!Number.isFinite(bookingId) || bookingId <= 0 || /[A-Za-z-]/.test(raw)) {
+            const booking = await api.getBookingByCode(token, raw);
+            bookingId = booking.id;
+          }
+          await onAssign(bookingId, roomId);
+          e.currentTarget.reset();
+        } catch (err) {
+          setLocalError(getErrorMessage(err, 'Could not find that reservation.'));
+        } finally {
+          setBusy(false);
+        }
       }}
     >
-      <label className="label-caps">Assign booking ID</label>
+      <label className="label-caps">Assign reservation</label>
       <div className="flex gap-2">
         <input
-          name="bookingId"
-          type="number"
+          name="bookingRef"
           required
-          placeholder="e.g. 12"
+          placeholder="BK-… or booking ID"
           className="input-field flex-1"
+          disabled={busy}
         />
-        <button type="submit" className="btn-secondary shrink-0">
-          Assign
+        <button type="submit" disabled={busy} className="btn-secondary shrink-0 disabled:opacity-50">
+          {busy ? '…' : 'Assign'}
         </button>
       </div>
+      {localError && (
+        <p className="text-xs text-[color:var(--color-danger)]">{localError}</p>
+      )}
+      <p className="text-[11px] text-ink/45">Paste a confirmation code from the guest or desk walk-in.</p>
     </form>
   );
 }

@@ -24,15 +24,17 @@ Full-stack hotel booking platform with guest booking flows, Front Office PMS too
 
 ## Quick start (Docker)
 
+**Minimal demo** (browse, book, Front Office) works with empty Groq/Stripe keys. Concierge answers degrade to document/inventory-only without `GROQ_API_KEY`.
+
 1. Copy environment file:
    ```bash
    cp .env.example .env
    ```
 
-2. Add keys to `.env` as needed:
+2. Optional keys in `.env` (skip for a basic demo):
    ```
-   GROQ_API_KEY=gsk_...
-   STRIPE_SECRET_KEY=sk_test_...
+   GROQ_API_KEY=gsk_...          # richer concierge answers
+   STRIPE_SECRET_KEY=sk_test_... # unused by guest UI until Checkout is re-enabled
    STRIPE_WEBHOOK_SECRET=whsec_...
    CHANNEL_API_KEY=dev-channel-key
    ```
@@ -43,10 +45,11 @@ Full-stack hotel booking platform with guest booking flows, Front Office PMS too
    ```
 
 4. Open:
-   - Frontend: http://localhost:5173
+   - Guest site: http://localhost:5173
+   - Operations: http://localhost:5173/login
    - Backend API: http://localhost:8080
 
-For local Stripe webhooks: `stripe listen --forward-to localhost:8080/api/v1/payments/stripe/webhook`
+Guest bookings confirm instantly with **pay at property** (no Stripe redirect). Seed data includes one Yangon property with gallery images. Optional multi-property SQL: `backend/scripts/seed-extra-properties.sql`.
 
 ## Production deploy (VPS + Docker Hub)
 
