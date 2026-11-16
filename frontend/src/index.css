@@ -1,24 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Syne", sans-serif;
-  --font-body: "Manrope", sans-serif;
-  --color-ink: #10201b;
-  --color-forest: #1a3c34;
-  --color-moss: #2f6b5a;
-  --color-lagoon: #3d8b7a;
-  --color-sand: #e7e1d6;
-  --color-fog: #f4f1ea;
-  --color-mist: #faf8f4;
-  --color-gold: #b8956c;
+  /* Hospitality commercial: Sora display + DM Sans body (not Inter/system) */
+  --font-display: "Sora", ui-sans-serif, sans-serif;
+  --font-body: "DM Sans", ui-sans-serif, sans-serif;
+  --color-ink: #0e1f1a;
+  --color-forest: #16352e;
+  --color-moss: #2a6a58;
+  --color-lagoon: #3a8576;
+  --color-sand: #d9e0dc;
+  --color-fog: #eef3f1;
+  --color-mist: #f3f6f5;
+  --color-gold: #c4a574;
   /* Semantic status */
-  --color-status-occupied: #1a3c34;
-  --color-status-clean: #2f6b5a;
+  --color-status-occupied: #16352e;
+  --color-status-clean: #2a6a58;
   --color-status-dirty: #a67c52;
   --color-status-inspecting: #3d7a8b;
   --color-status-maintenance: #8b4a3d;
   --color-status-pending: #9a7b4f;
-  --color-status-paid: #2f6b5a;
+  --color-status-paid: #2a6a58;
   --color-status-unpaid: #a65c3d;
   --color-danger: #9b3d3d;
   --color-success: #2a6b4f;
@@ -33,11 +34,13 @@
   body {
     @apply antialiased text-ink;
     font-family: var(--font-body);
+    font-optical-sizing: auto;
+    letter-spacing: -0.011em;
     background-color: var(--color-mist);
     background-image:
-      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(61, 139, 122, 0.12), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(184, 149, 108, 0.1), transparent),
-      linear-gradient(180deg, #faf8f4 0%, #f0ebe3 100%);
+      radial-gradient(ellipse 70% 45% at 8% -8%, rgba(58, 133, 118, 0.14), transparent 55%),
+      radial-gradient(ellipse 55% 35% at 100% 0%, rgba(196, 165, 116, 0.09), transparent 50%),
+      linear-gradient(180deg, #f3f6f5 0%, #e8eeeb 100%);
     min-height: 100vh;
   }
 
@@ -46,6 +49,7 @@
   h3,
   .font-display {
     font-family: var(--font-display);
+    letter-spacing: -0.03em;
   }
 }
 
@@ -250,8 +254,12 @@
 
 .ops-canvas {
   background:
-    radial-gradient(ellipse 50% 40% at 0% 0%, rgba(61, 139, 122, 0.07), transparent),
-    linear-gradient(180deg, #f7f4ee 0%, #f0ebe3 100%);
+    radial-gradient(ellipse 50% 40% at 0% 0%, rgba(58, 133, 118, 0.08), transparent),
+    linear-gradient(180deg, #f2f5f4 0%, #e8eeeb 100%);
+}
+
+.font-body {
+  font-family: var(--font-body);
 }
 
 .data-table {

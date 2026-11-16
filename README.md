@@ -49,7 +49,7 @@ Full-stack hotel booking platform with guest booking flows, Front Office PMS too
    - Operations: http://localhost:5173/login
    - Backend API: http://localhost:8080
 
-Guest bookings confirm instantly with **pay at property** (no Stripe redirect). Seed data includes one Yangon property with gallery images. Optional multi-property SQL: `backend/scripts/seed-extra-properties.sql`.
+Guest bookings confirm instantly with **pay at property** (no Stripe redirect). Liquibase seeds **five Myanmar properties** (rooms, images, blackouts, sample bookings `BK-DEMO-*`, folios, and RAG FAQs). Optional legacy script: `backend/scripts/seed-extra-properties.sql` (catalog is already in migration `006`).
 
 ## Production deploy (VPS + Docker Hub)
 
