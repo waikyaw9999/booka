@@ -32,8 +32,8 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(opt.id)}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               active
-                ? 'bg-forest text-white shadow-sm'
-                : 'text-ink/60 hover:bg-white/80 hover:text-forest'
+                ? 'bg-moss text-white shadow-sm'
+                : 'text-ink/60 hover:bg-white hover:text-forest'
             }`}
           >
             {opt.label}
