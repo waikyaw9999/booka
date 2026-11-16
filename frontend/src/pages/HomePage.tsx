@@ -18,8 +18,8 @@ export function HomePage() {
           alt="Hotel lobby atmosphere"
           className="hero-media absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/88 via-ink/55 to-ink/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/55 via-transparent to-ink/25" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/78 via-ink/42 to-ink/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-ink/18" />
 
         <div className="relative mx-auto flex min-h-[90vh] max-w-6xl flex-col justify-end px-4 pb-16 pt-28 sm:pb-24">
           <p className="animate-rise font-display text-5xl font-bold tracking-tight sm:text-7xl md:text-8xl">

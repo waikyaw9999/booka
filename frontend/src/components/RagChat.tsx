@@ -77,19 +77,19 @@ export function RagChat({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-sand/80 bg-gradient-to-b from-white/90 to-fog/40 shadow-[0_16px_40px_-28px_rgba(16,32,27,0.4)]">
+    <div className="overflow-hidden rounded-2xl border border-sand/90 bg-white shadow-[0_16px_40px_-28px_rgba(28,50,44,0.28)]">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between border-b border-sand/60 bg-forest px-4 py-3.5 text-left text-white"
+        className="flex w-full items-center justify-between border-b border-sand/80 bg-fog px-4 py-3.5 text-left text-ink"
       >
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gold/90">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-moss">
             Concierge
           </p>
-          <span className="font-display text-lg font-semibold">{title}</span>
+          <span className="font-display text-lg font-semibold text-forest">{title}</span>
         </div>
-        <span className="text-xs text-sand/70">
+        <span className="text-xs text-ink/45">
           {ragAvailable === false ? 'Offline mode' : ragAvailable ? 'Live' : open ? 'Collapse' : 'Open'}
         </span>
       </button>
@@ -117,8 +117,8 @@ export function RagChat({
                   key={i}
                   className={`rounded-xl px-3 py-2 text-sm ${
                     msg.role === 'user'
-                      ? 'ml-8 bg-forest text-white'
-                      : 'mr-8 border border-sand/70 bg-white/90 text-ink'
+                      ? 'ml-8 bg-moss text-white shadow-sm'
+                      : 'mr-8 border border-sand/80 bg-fog/60 text-ink'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
