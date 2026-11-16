@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../lib/api';
-import { hotelDisplayImage, resolveMediaUrl } from '../lib/media';
+import { hotelDisplayImage, resolveMediaUrl, roomDisplayImage } from '../lib/media';
 import { useBookingStore } from '../stores';
 import { PublicRagWidget } from '../components/PublicRagWidget';
 import { BlackoutNotice } from '../components/BlackoutNotice';
@@ -299,8 +299,8 @@ export function HotelDetailPage() {
               />
             ) : (
               <ul className="divide-y divide-sand/80 overflow-hidden rounded-2xl border border-sand/80 bg-white/70">
-                {availability.map((item) => {
-                  const roomImage = resolveMediaUrl(item.roomType.primaryImageUrl);
+                {availability.map((item, idx) => {
+                  const roomImage = roomDisplayImage(item.roomType, idx);
                   const highlighted =
                     highlightRoomTypeId != null && item.roomType.id === highlightRoomTypeId;
                   return (
@@ -311,14 +311,12 @@ export function HotelDetailPage() {
                     }`}
                   >
                     <div className="flex min-w-0 flex-1 gap-4">
-                      {roomImage && (
-                        <img
-                          src={roomImage}
-                          alt={item.roomType.name}
-                          className="h-20 w-28 shrink-0 rounded-xl object-cover sm:h-24 sm:w-32"
-                          loading="lazy"
-                        />
-                      )}
+                      <img
+                        src={roomImage}
+                        alt={item.roomType.name}
+                        className="h-20 w-28 shrink-0 rounded-xl object-cover sm:h-24 sm:w-32"
+                        loading="lazy"
+                      />
                       <div className="min-w-0">
                         <h3 className="font-display text-xl font-semibold text-ink">
                           {item.roomType.name}

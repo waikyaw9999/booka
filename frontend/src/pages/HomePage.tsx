@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { HotelCard } from '../components/HotelCard';
 import { PublicRagWidget } from '../components/PublicRagWidget';
 import { EmptyState, InlineAlert } from '../components/ui';
+import { HERO_IMAGE } from '../lib/media';
 
 export function HomePage() {
   const { data: hotels, isLoading, error } = useQuery({
@@ -14,7 +15,7 @@ export function HomePage() {
     <div>
       <section className="relative min-h-[90vh] overflow-hidden text-white">
         <img
-          src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=2000&q=80"
+          src={HERO_IMAGE}
           alt="Hotel lobby atmosphere"
           className="hero-media absolute inset-0 h-full w-full object-cover"
         />

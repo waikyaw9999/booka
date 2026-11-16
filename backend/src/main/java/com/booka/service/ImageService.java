@@ -248,12 +248,12 @@ public class ImageService {
             throw new BusinessException("Image URL is required");
         }
         String trimmed = url.trim();
-        if (trimmed.startsWith("/uploads/")) {
+        if (trimmed.startsWith("/uploads/") || trimmed.startsWith("/media/")) {
             return trimmed;
         }
         String lower = trimmed.toLowerCase(Locale.ROOT);
         if (!(lower.startsWith("https://") || lower.startsWith("http://"))) {
-            throw new BusinessException("Image URL must be http(s) or a /uploads/ path");
+            throw new BusinessException("Image URL must be http(s), /uploads/, or /media/ path");
         }
         if (trimmed.length() > 2048) {
             throw new BusinessException("Image URL is too long");

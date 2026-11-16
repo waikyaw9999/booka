@@ -120,7 +120,7 @@ export function ImageManager({
       <div>
         <h3 className="text-sm font-semibold text-ink">{title}</h3>
         <p className="mt-0.5 text-xs text-ink/50">
-          Paste an https image URL, or upload a JPEG/PNG/WebP (stored under /uploads).
+          Paste an https or /media image URL, or upload a JPEG/PNG/WebP (stored under /uploads).
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export function ImageManager({
         <input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://…"
+          placeholder="https://… or /media/…"
           className="input-field"
         />
         <button

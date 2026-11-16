@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-localize-seed-media
+      author: booka
+      changes:
+        - sqlFile:
+            path: db/changelog/changes/007-localize-seed-media.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true

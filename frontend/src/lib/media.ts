@@ -1,7 +1,11 @@
-/** Resolve image URLs for display (absolute https or same-origin /uploads). */
+/** Resolve image URLs for display (absolute https, SPA /media, or API /uploads). */
 export function resolveMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // Bundled guest/demo assets live in frontend/public/media — same origin as the SPA.
+  if (url.startsWith('/media/')) {
     return url;
   }
   const base = String(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
@@ -12,12 +16,22 @@ export function resolveMediaUrl(url: string | null | undefined): string | null {
 }
 
 export const FALLBACK_HOTEL_IMAGES = [
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80',
+  '/media/hotels/grand-lobby.jpg',
+  '/media/hotels/grand-pool.jpg',
+  '/media/hotels/harbour-pool.jpg',
+  '/media/hotels/harbour-facade.jpg',
+  '/media/hotels/mandalay-facade.jpg',
 ];
+
+export const FALLBACK_ROOM_IMAGES = [
+  '/media/rooms/standard.jpg',
+  '/media/rooms/deluxe.jpg',
+  '/media/rooms/harbour-twin.jpg',
+  '/media/rooms/skyline-suite.jpg',
+  '/media/rooms/lake-cabin.jpg',
+];
+
+export const HERO_IMAGE = '/media/hero.jpg';
 
 export function hotelDisplayImage(
   hotel: { primaryImageUrl?: string | null; images?: { url: string; primary?: boolean }[] },
@@ -29,4 +43,14 @@ export function hotelDisplayImage(
     ?? resolveMediaUrl(hotel.images?.[0]?.url);
   if (primary) return primary;
   return FALLBACK_HOTEL_IMAGES[index % FALLBACK_HOTEL_IMAGES.length];
+}
+
+export function roomDisplayImage(
+  room: { primaryImageUrl?: string | null },
+  index = 0,
+): string {
+  return (
+    resolveMediaUrl(room.primaryImageUrl)
+    ?? FALLBACK_ROOM_IMAGES[index % FALLBACK_ROOM_IMAGES.length]
+  );
 }
