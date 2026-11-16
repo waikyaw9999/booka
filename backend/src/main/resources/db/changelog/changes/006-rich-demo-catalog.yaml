@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-rich-demo-catalog
+      author: booka
+      comment: Multi-property catalog, imagery, bookings, folios, and RAG FAQs for a full demo
+      changes:
+        - sqlFile:
+            path: 006-rich-demo-catalog.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 006-sync-sequences-postgres
+      author: booka
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: |
+              SELECT setval(pg_get_serial_sequence('hotels', 'id'), (SELECT COALESCE(MAX(id), 1) FROM hotels));
+              SELECT setval(pg_get_serial_sequence('room_types', 'id'), (SELECT COALESCE(MAX(id), 1) FROM room_types));
+              SELECT setval(pg_get_serial_sequence('rooms', 'id'), (SELECT COALESCE(MAX(id), 1) FROM rooms));
+              SELECT setval(pg_get_serial_sequence('blackout_dates', 'id'), (SELECT COALESCE(MAX(id), 1) FROM blackout_dates));
+              SELECT setval(pg_get_serial_sequence('rag_documents', 'id'), (SELECT COALESCE(MAX(id), 1) FROM rag_documents));
+              SELECT setval(pg_get_serial_sequence('rag_chunks', 'id'), (SELECT COALESCE(MAX(id), 1) FROM rag_chunks));
+              SELECT setval(pg_get_serial_sequence('guests', 'id'), (SELECT COALESCE(MAX(id), 1) FROM guests));
+              SELECT setval(pg_get_serial_sequence('bookings', 'id'), (SELECT COALESCE(MAX(id), 1) FROM bookings));
+              SELECT setval(pg_get_serial_sequence('folios', 'id'), (SELECT COALESCE(MAX(id), 1) FROM folios));
+              SELECT setval(pg_get_serial_sequence('hotel_images', 'id'), (SELECT COALESCE(MAX(id), 1) FROM hotel_images));
+              SELECT setval(pg_get_serial_sequence('room_images', 'id'), (SELECT COALESCE(MAX(id), 1) FROM room_images));
+
+  - changeSet:
+      id: 006-sync-sequences-h2
+      author: booka
+      dbms: h2
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE hotels ALTER COLUMN id RESTART WITH 20;
+              ALTER TABLE room_types ALTER COLUMN id RESTART WITH 20;
+              ALTER TABLE rooms ALTER COLUMN id RESTART WITH 50;
+              ALTER TABLE blackout_dates ALTER COLUMN id RESTART WITH 20;
+              ALTER TABLE rag_documents ALTER COLUMN id RESTART WITH 20;
+              ALTER TABLE rag_chunks ALTER COLUMN id RESTART WITH 30;
+              ALTER TABLE guests ALTER COLUMN id RESTART WITH 20;
+              ALTER TABLE bookings ALTER COLUMN id RESTART WITH 200;
+              ALTER TABLE folios ALTER COLUMN id RESTART WITH 200;
+              ALTER TABLE hotel_images ALTER COLUMN id RESTART WITH 50;
+              ALTER TABLE room_images ALTER COLUMN id RESTART WITH 50;

@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changes/004-hotel-room-images.yaml
   - include:
       file: db/changelog/changes/005-demo-imagery-copy.yaml
+  - include:
+      file: db/changelog/changes/006-rich-demo-catalog.yaml

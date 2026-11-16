@@ -37,16 +37,16 @@ export function LoginPage() {
 
   return (
     <div className="relative min-h-[70vh] overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_0%,rgba(61,139,122,0.14),transparent)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_0%,rgba(58,133,118,0.16),transparent)]" />
       <div className="relative mx-auto grid max-w-5xl gap-10 px-4 py-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
         <div className="animate-rise space-y-4">
-          <p className="font-display text-5xl font-bold text-forest">Booka</p>
+          <p className="font-display text-5xl font-bold tracking-tight text-forest">Booka</p>
           <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
             Operations portal
           </h1>
-          <p className="max-w-md text-ink/60">
-            Sign in for front office, housekeeping, folios, and the staff assistant — separate from
-            the guest booking experience.
+          <p className="max-w-md leading-relaxed text-ink/60">
+            Front office, housekeeping, folios, and the staff assistant — separate from the guest
+            booking experience.
           </p>
           {import.meta.env.DEV && (
             <p className="text-sm text-ink/45">
