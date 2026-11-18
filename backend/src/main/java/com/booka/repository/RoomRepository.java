@@ -32,7 +32,8 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
                 AND (:excludeBookingId IS NULL OR b.id <> :excludeBookingId)
                 AND b.status NOT IN (
                     com.booka.domain.enums.BookingStatus.CANCELLED,
-                    com.booka.domain.enums.BookingStatus.CHECKED_OUT)
+                    com.booka.domain.enums.BookingStatus.CHECKED_OUT,
+                    com.booka.domain.enums.BookingStatus.NO_SHOW)
                 AND b.checkInDate < :checkOut
                 AND b.checkOutDate > :checkIn
             )

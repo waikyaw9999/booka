@@ -12,11 +12,11 @@ interface Props {
 export function MaintenanceTickets({ token, hotelId }: Props) {
   const queryClient = useQueryClient();
   const { data: tickets, isLoading } = useQuery({
-    queryKey: ['maintenance-tickets'],
+    queryKey: ['maintenance-tickets', hotelId],
     queryFn: () => api.listMaintenanceTickets(token),
   });
   const { data: rooms } = useQuery({
-    queryKey: ['room-board'],
+    queryKey: ['room-board', hotelId],
     queryFn: () => api.listRoomBoard(token),
   });
 

@@ -12,23 +12,29 @@ export function HomePage() {
 
   return (
     <div>
-      <section className="relative min-h-[90vh] overflow-hidden text-white">
+      <section className="relative min-h-[78vh] overflow-hidden sm:min-h-[84vh]">
         <img
-          src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=2000&q=80"
-          alt="Hotel lobby atmosphere"
-          className="hero-media absolute inset-0 h-full w-full object-cover"
+          src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=2000&q=80"
+          alt="Sunlit resort pool and palms"
+          className="hero-media absolute inset-0 h-full w-full object-cover object-[center_40%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/78 via-ink/42 to-ink/15" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-ink/18" />
+        <div className="absolute inset-0 bg-gradient-to-t from-mist via-mist/80 to-mist/35 sm:hidden" />
+        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(251,252,251,0.94)_0%,rgba(251,252,251,0.86)_34%,rgba(251,252,251,0.28)_62%,rgba(251,252,251,0)_100%)] sm:block" />
+        <div className="absolute inset-0 hidden bg-gradient-to-t from-mist/75 via-transparent to-white/10 sm:block" />
+        <div className="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-gold/20 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-8 right-[18%] h-40 w-40 rounded-full bg-lagoon/25 blur-3xl" />
 
-        <div className="relative mx-auto flex min-h-[90vh] max-w-6xl flex-col justify-end px-4 pb-16 pt-28 sm:pb-24">
-          <p className="animate-rise font-display text-5xl font-bold tracking-tight sm:text-7xl md:text-8xl">
+        <div className="relative mx-auto flex min-h-[78vh] max-w-6xl flex-col justify-end px-4 pb-14 pt-16 sm:min-h-[84vh] sm:pb-20">
+          <p className="animate-rise text-[11px] font-semibold uppercase tracking-[0.2em] text-moss">
+            Sunny stays · Myanmar
+          </p>
+          <p className="animate-rise mt-3 font-display text-5xl font-bold tracking-tight text-forest sm:text-7xl md:text-8xl">
             Booka
           </p>
-          <h1 className="animate-rise-delay mt-5 max-w-xl font-display text-2xl font-semibold leading-snug sm:text-3xl md:text-[2.15rem]">
+          <h1 className="animate-rise-delay mt-4 max-w-xl font-display text-2xl font-semibold leading-snug text-ink sm:text-3xl md:text-[2.15rem]">
             Stays that feel settled the moment you arrive.
           </h1>
-          <p className="animate-rise-delay-2 mt-4 max-w-lg text-base leading-relaxed text-white/78 sm:text-lg">
+          <p className="animate-rise-delay-2 mt-4 max-w-lg text-base leading-relaxed text-ink/70 sm:text-lg">
             Browse calm properties across Myanmar, check live availability, and confirm without the
             noise — pay at the property on arrival.
           </p>
@@ -36,10 +42,7 @@ export function HomePage() {
             <a href="#stays" className="btn-primary">
               Explore stays
             </a>
-            <a
-              href="#concierge"
-              className="inline-flex items-center justify-center rounded-xl border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/18"
-            >
+            <a href="#concierge" className="btn-secondary">
               Ask concierge
             </a>
           </div>

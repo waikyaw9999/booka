@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-property-logins
+      author: booka
+      comment: Manager and front-desk users scoped to each demo property
+      changes:
+        - sqlFile:
+            path: 008-property-logins.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 008-sync-user-sequence-postgres
+      author: booka
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT COALESCE(MAX(id), 1) FROM users));
+
+  - changeSet:
+      id: 008-sync-user-sequence-h2
+      author: booka
+      dbms: h2
+      changes:
+        - sql:
+            sql: ALTER TABLE users ALTER COLUMN id RESTART WITH 20;

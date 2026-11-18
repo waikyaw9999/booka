@@ -1,5 +1,6 @@
 package com.booka.domain.entity;
 
+import com.booka.domain.enums.VipTier;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -27,6 +28,21 @@ public class Guest {
     private String fullName;
 
     private String phone;
+
+    @Column(length = 80)
+    private String nationality;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vip_tier", nullable = false, length = 16)
+    @Builder.Default
+    private VipTier vipTier = VipTier.NONE;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean blacklisted = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

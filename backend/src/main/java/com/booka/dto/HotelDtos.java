@@ -106,6 +106,12 @@ public final class HotelDtos {
             String notes
     ) {}
 
+    public record ChannelRevenue(
+            String channel,
+            long rooms,
+            BigDecimal roomRevenue
+    ) {}
+
     public record DashboardStatsResponse(
             long totalRooms,
             long occupiedRooms,
@@ -113,6 +119,16 @@ public final class HotelDtos {
             long maintenanceRooms,
             long upcomingCheckIns,
             long upcomingCheckOuts,
-            long activeBookings
+            long activeBookings,
+            String businessDate,
+            BigDecimal occupancyPercent,
+            BigDecimal roomRevenue,
+            BigDecimal adr,
+            BigDecimal revpar,
+            BigDecimal openBalance,
+            long inHouse,
+            long noShowCandidates,
+            long dueOuts,
+            java.util.List<ChannelRevenue> channels
     ) {}
 }

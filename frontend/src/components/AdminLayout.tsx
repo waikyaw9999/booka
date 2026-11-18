@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuthStore, useRagStore } from '../stores';
 
@@ -9,9 +9,12 @@ const NAV = [
   { id: 'front-office', label: 'Front Office', path: '/admin?tab=front-office' },
   { id: 'inventory', label: 'Inventory', path: '/admin?tab=inventory' },
   { id: 'reservations', label: 'Reservations', path: '/admin?tab=reservations' },
+  { id: 'guests', label: 'Guests', path: '/admin?tab=guests' },
+  { id: 'requests', label: 'Requests', path: '/admin?tab=requests' },
   { id: 'housekeeping', label: 'Housekeeping', path: '/admin?tab=housekeeping' },
   { id: 'maintenance', label: 'Maintenance', path: '/admin?tab=maintenance' },
   { id: 'folios', label: 'Folios', path: '/admin?tab=folios' },
+  { id: 'night-audit', label: 'Night audit', path: '/admin?tab=night-audit' },
   { id: 'blackouts', label: 'Blackouts', path: '/admin?tab=blackouts' },
   { id: 'assistant', label: 'Assistant', path: '/admin?tab=assistant' },
 ] as const;
@@ -19,6 +22,7 @@ const NAV = [
 export function AdminLayout() {
   const { user, isStaff, logout } = useAuthStore();
   const { clearStaffMessages } = useRagStore();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -38,6 +42,7 @@ export function AdminLayout() {
 
   function handleLogout() {
     clearStaffMessages();
+    queryClient.clear();
     logout();
   }
 

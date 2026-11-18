@@ -32,7 +32,7 @@ export function WalkInForm({ token, hotelId, onCreated }: Props) {
   });
 
   const { data: rooms } = useQuery({
-    queryKey: ['room-board'],
+    queryKey: ['room-board', hotelId],
     queryFn: () => api.listRoomBoard(token),
   });
 

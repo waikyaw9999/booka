@@ -1,69 +1,46 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../stores';
+import { Link, Outlet } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore, useRagStore } from '../stores';
 
 export function Layout() {
   const { user, logout, isStaff } = useAuthStore();
-  const location = useLocation();
-  const isHome = location.pathname === '/';
+  const clearStaffMessages = useRagStore((s) => s.clearStaffMessages);
+  const queryClient = useQueryClient();
+
+  function handleLogout() {
+    clearStaffMessages();
+    queryClient.clear();
+    logout();
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header
-        className={`sticky top-0 z-40 transition-colors duration-300 ${
-          isHome
-            ? 'border-b border-white/15 bg-ink/30 text-white backdrop-blur-xl'
-            : 'border-b border-sand/90 bg-white/90 text-ink shadow-[0_8px_24px_-20px_rgba(28,50,44,0.35)] backdrop-blur-xl'
-        }`}
-      >
+      <header className="sticky top-0 z-40 border-b border-sand/90 bg-white/90 text-ink shadow-[0_8px_24px_-20px_rgba(28,50,44,0.35)] backdrop-blur-xl transition-colors duration-300">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:py-4">
           <Link to="/" className="group flex items-baseline gap-2">
-            <span
-              className={`font-display text-2xl font-bold tracking-tight sm:text-[1.65rem] ${
-                isHome ? 'text-white' : 'text-forest'
-              }`}
-            >
+            <span className="font-display text-2xl font-bold tracking-tight text-forest sm:text-[1.65rem]">
               Booka
             </span>
-            <span
-              className={`hidden text-[10px] font-semibold uppercase tracking-[0.18em] sm:inline ${
-                isHome ? 'text-gold/95' : 'text-moss'
-              }`}
-            >
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-moss sm:inline">
               Stays
             </span>
           </Link>
-          <nav
-            className={`flex items-center gap-4 text-sm font-medium sm:gap-6 ${
-              isHome ? 'text-white' : 'text-ink/75'
-            }`}
-          >
-            <Link
-              to="/#stays"
-              className={`transition ${isHome ? 'opacity-90 hover:opacity-100' : 'hover:text-forest'}`}
-            >
+          <nav className="flex items-center gap-4 text-sm font-medium text-ink/75 sm:gap-6">
+            <Link to="/#stays" className="transition hover:text-forest">
               Stays
             </Link>
             {isStaff() && (
-              <Link
-                to="/admin"
-                className={`transition ${isHome ? 'opacity-90 hover:opacity-100' : 'hover:text-forest'}`}
-              >
+              <Link to="/admin" className="transition hover:text-forest">
                 Operations
               </Link>
             )}
             {user ? (
               <div className="flex items-center gap-3">
-                <span className={`hidden max-w-[10rem] truncate sm:inline ${isHome ? 'opacity-75' : 'text-ink/55'}`}>
-                  {user.fullName}
-                </span>
+                <span className="hidden max-w-[10rem] truncate text-ink/55 sm:inline">{user.fullName}</span>
                 <button
                   type="button"
-                  onClick={logout}
-                  className={`rounded-xl px-3 py-1.5 transition ${
-                    isHome
-                      ? 'border border-white/25 hover:bg-white/10'
-                      : 'border border-sand bg-fog/80 text-forest hover:border-lagoon/40'
-                  }`}
+                  onClick={handleLogout}
+                  className="rounded-xl border border-sand bg-fog/80 px-3 py-1.5 text-forest transition hover:border-lagoon/40"
                 >
                   Logout
                 </button>
@@ -71,11 +48,7 @@ export function Layout() {
             ) : (
               <Link
                 to="/login"
-                className={`rounded-xl px-3.5 py-1.5 font-semibold shadow-sm transition ${
-                  isHome
-                    ? 'bg-white text-forest hover:bg-fog'
-                    : 'bg-moss text-white hover:brightness-105'
-                }`}
+                className="rounded-xl bg-moss px-3.5 py-1.5 font-semibold text-white shadow-sm transition hover:brightness-105"
               >
                 Staff
               </Link>

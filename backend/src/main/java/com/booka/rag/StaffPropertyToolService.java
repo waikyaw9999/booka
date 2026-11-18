@@ -232,6 +232,10 @@ public class StaffPropertyToolService {
                 Check-ins today: %d
                 Check-outs today: %d
                 Active bookings: %d
+                Occupancy %%: %s
+                ADR: %s
+                RevPAR: %s
+                Room revenue (in-house night): %s
                 """.formatted(
                 hotelName,
                 summary.totalRooms(),
@@ -240,18 +244,24 @@ public class StaffPropertyToolService {
                 summary.maintenanceRooms(),
                 summary.upcomingCheckIns(),
                 summary.upcomingCheckOuts(),
-                summary.activeBookings());
+                summary.activeBookings(),
+                stats.occupancyPercent(),
+                stats.adr(),
+                stats.revpar(),
+                stats.roomRevenue());
 
         String fallback = """
                 Property summary for %s:
                 • Rooms: %d total (%d occupied, %d available, %d maintenance)
                 • Today: %d check-ins, %d check-outs
                 • Active bookings: %d
+                • Occupancy %s%% · ADR %s · RevPAR %s · room revenue %s
                 """.formatted(
                 hotelName,
                 summary.totalRooms(), summary.occupiedRooms(), summary.availableRooms(), summary.maintenanceRooms(),
                 summary.upcomingCheckIns(), summary.upcomingCheckOuts(),
-                summary.activeBookings()).trim();
+                summary.activeBookings(),
+                stats.occupancyPercent(), stats.adr(), stats.revpar(), stats.roomRevenue()).trim();
 
         String answer = summarize(
                 """

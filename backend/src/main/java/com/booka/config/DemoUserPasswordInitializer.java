@@ -9,10 +9,25 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class DemoUserPasswordInitializer implements ApplicationRunner {
+
+    static final List<String> DEMO_EMAILS = List.of(
+            "admin@booka.com",
+            "staff@booka.com",
+            "harbour.admin@booka.com",
+            "harbour.staff@booka.com",
+            "inle.admin@booka.com",
+            "inle.staff@booka.com",
+            "bagan.admin@booka.com",
+            "bagan.staff@booka.com",
+            "mandalay.admin@booka.com",
+            "mandalay.staff@booka.com"
+    );
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -21,14 +36,12 @@ public class DemoUserPasswordInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         String encoded = passwordEncoder.encode("password");
-        userRepository.findByEmail("admin@booka.com").ifPresent(user -> {
-            user.setPasswordHash(encoded);
-            userRepository.save(user);
-        });
-        userRepository.findByEmail("staff@booka.com").ifPresent(user -> {
-            user.setPasswordHash(encoded);
-            userRepository.save(user);
-        });
+        for (String email : DEMO_EMAILS) {
+            userRepository.findByEmail(email).ifPresent(user -> {
+                user.setPasswordHash(encoded);
+                userRepository.save(user);
+            });
+        }
         log.info("Demo user passwords synchronized");
     }
 }

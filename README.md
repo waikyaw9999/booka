@@ -58,10 +58,15 @@ CI/CD ships images to Docker Hub, then SSHs to the VPS to pull and restart Compo
 Production HTTPS: Caddy on the VPS terminates Let's Encrypt TLS for `booka.juneko.online` and proxies to the internal frontend. See **[docs/VPS_DOCKER_CICD.md](docs/VPS_DOCKER_CICD.md)** (§7 HTTPS with Caddy) for DNS, firewall, `scp`, and verify steps.
 ## Demo credentials
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@booka.com | password |
-| Staff | staff@booka.com | password |
+Each property has its own manager and front-desk login. Password for every demo account is `password`.
+
+| Property | Manager | Front desk |
+|----------|---------|------------|
+| Booka Grand Hotel | admin@booka.com | staff@booka.com |
+| Harbourview Suites | harbour.admin@booka.com | harbour.staff@booka.com |
+| Inle Lake Lodge | inle.admin@booka.com | inle.staff@booka.com |
+| Bagan Sandstone Inn | bagan.admin@booka.com | bagan.staff@booka.com |
+| Mandalay Heritage House | mandalay.admin@booka.com | mandalay.staff@booka.com |
 
 ## Local development
 

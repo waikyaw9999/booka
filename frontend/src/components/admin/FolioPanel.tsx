@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../../lib/api';
 import { StatusPill, EmptyState, InlineAlert } from '../ui';
+import { money } from '../../lib/format';
+import type { PaymentMethod } from '../../types';
 
 interface Props {
   token: string;
@@ -22,11 +24,14 @@ export function FolioPanel({ token }: Props) {
   const [description, setDescription] = useState('Restaurant charge');
   const [amount, setAmount] = useState('25.00');
   const [externalRef, setExternalRef] = useState('');
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('CASH');
+  const [payRef, setPayRef] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const enabled = resolvedBookingId != null && resolvedBookingId > 0;
-  const { data: folio, isLoading, isFetching, error: folioError } = useQuery({
+  const { data: folio, isLoading, error: folioError } = useQuery({
     queryKey: ['folio', resolvedBookingId],
     queryFn: () => api.getAdminFolio(token, resolvedBookingId!),
     enabled,
@@ -34,7 +39,7 @@ export function FolioPanel({ token }: Props) {
 
   const charges = folio?.lineItems.filter((l) => l.type !== 'PAYMENT') ?? [];
   const payments = folio?.lineItems.filter((l) => l.type === 'PAYMENT') ?? [];
-  const searching = resolving || (enabled && (isLoading || isFetching));
+  const searching = resolving || (enabled && isLoading && !folio);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -82,6 +87,26 @@ export function FolioPanel({ token }: Props) {
       setSuccess('F&B charge posted.');
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to post charge. Please try again.'));
+    }
+  }
+
+  async function postPayment(e: React.FormEvent) {
+    e.preventDefault();
+    if (resolvedBookingId == null) return;
+    setError('');
+    setSuccess('');
+    try {
+      await api.postFolioPayment(token, resolvedBookingId, {
+        amount: Number(payAmount),
+        method: payMethod,
+        reference: payRef || undefined,
+      });
+      setPayRef('');
+      queryClient.invalidateQueries({ queryKey: ['folio', resolvedBookingId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      setSuccess('Payment posted to the folio.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to post the payment.'));
     }
   }
 
@@ -136,7 +161,7 @@ export function FolioPanel({ token }: Props) {
             <div className="ops-panel">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/45">Charges</p>
               <p className="mt-1 font-display text-2xl font-bold text-ink">
-                ${Number(folio.chargesTotal).toFixed(2)}
+                {money(folio.chargesTotal)}
               </p>
             </div>
             <div className="ops-panel">
@@ -150,10 +175,10 @@ export function FolioPanel({ token }: Props) {
                     : 'text-moss'
                 }`}
               >
-                ${Number(folio.balance).toFixed(2)}
+                {money(folio.balance)}
               </p>
               <p className="mt-1 text-xs text-ink/45">
-                Payments ${Number(folio.paymentsTotal).toFixed(2)}
+                Payments {money(folio.paymentsTotal)}
               </p>
             </div>
           </div>
@@ -202,6 +227,51 @@ export function FolioPanel({ token }: Props) {
               Post charge
             </button>
           </form>
+
+          <form onSubmit={postPayment} className="ops-panel space-y-3">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-ink">Take payment</h3>
+              <p className="mt-1 text-sm text-ink/55">
+                Cash, card, or bank transfer collected at the desk. Balance due {money(folio.balance)}.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="label-caps">Method</label>
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
+                  className="input-field"
+                >
+                  <option value="CASH">Cash</option>
+                  <option value="CARD">Card</option>
+                  <option value="TRANSFER">Bank transfer</option>
+                </select>
+              </div>
+              <div>
+                <label className="label-caps">Amount</label>
+                <input
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  className="input-field"
+                  inputMode="decimal"
+                  required
+                />
+              </div>
+              <div>
+                <label className="label-caps">Reference</label>
+                <input
+                  value={payRef}
+                  onChange={(e) => setPayRef(e.target.value)}
+                  className="input-field"
+                  placeholder="Receipt or slip"
+                />
+              </div>
+            </div>
+            <button type="submit" className="btn-primary" disabled={folio.status === 'CLOSED'}>
+              Post payment
+            </button>
+          </form>
         </div>
       )}
     </div>
@@ -235,7 +305,7 @@ function LedgerColumn({
                 </p>
               </div>
               <span className="shrink-0 font-semibold tabular-nums text-forest">
-                ${Number(line.amount).toFixed(2)}
+                {money(line.amount)}
               </span>
             </li>
           ))}

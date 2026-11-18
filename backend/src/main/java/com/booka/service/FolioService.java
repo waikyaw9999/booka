@@ -4,6 +4,7 @@ import com.booka.domain.entity.Folio;
 import com.booka.domain.entity.FolioLineItem;
 import com.booka.domain.enums.FolioLineType;
 import com.booka.domain.enums.FolioStatus;
+import com.booka.domain.enums.PaymentMethod;
 import com.booka.dto.FolioDtos.*;
 import com.booka.exception.BusinessException;
 import com.booka.exception.ResourceNotFoundException;
@@ -55,6 +56,28 @@ public class FolioService {
                     });
         }
         postLine(folio.getId(), request.type(), request.description(), request.amount(), request.externalRef());
+        return getFolioByBookingId(bookingId);
+    }
+
+    @Transactional
+    public FolioResponse postDeskPayment(Long bookingId, BigDecimal amount, PaymentMethod method, String reference) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new BusinessException("Payment amount must be greater than zero");
+        }
+        Folio folio = requireOpenFolio(bookingId);
+        String externalRef = null;
+        if (reference != null && !reference.isBlank()) {
+            externalRef = method.name() + ":" + reference.trim();
+            if (folioLineItemRepository.findByFolioIdAndExternalRef(folio.getId(), externalRef).isPresent()) {
+                throw new BusinessException("A payment with this reference is already posted");
+            }
+        }
+        String label = switch (method) {
+            case CASH -> "Cash payment";
+            case CARD -> "Card payment";
+            case TRANSFER -> "Bank transfer";
+        };
+        postLine(folio.getId(), FolioLineType.PAYMENT, label, amount.abs().negate(), externalRef);
         return getFolioByBookingId(bookingId);
     }
 
