@@ -63,13 +63,13 @@ export function AdminPage() {
   }, [tab]);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', user?.hotelId],
     queryFn: () => api.getDashboard(user!.token),
     enabled: !!user?.token,
   });
 
   const { data: bookings, refetch, isLoading: bookingsLoading } = useQuery({
-    queryKey: ['admin-bookings'],
+    queryKey: ['admin-bookings', user?.hotelId],
     queryFn: () => api.listBookings(user!.token),
     enabled: !!user?.token,
   });
@@ -221,6 +221,7 @@ export function AdminPage() {
             loading={bookingsLoading}
             onStatusChange={handleStatusChange}
             onNoShow={handleNoShow}
+            businessDate={businessDate}
             compact
           />
         </div>
@@ -259,6 +260,7 @@ export function AdminPage() {
             loading={bookingsLoading}
             onStatusChange={handleStatusChange}
             onNoShow={handleNoShow}
+            businessDate={businessDate}
           />
         </div>
       )}
@@ -424,16 +426,18 @@ function ReservationsTable({
   loading,
   onStatusChange,
   onNoShow,
+  businessDate,
   compact,
 }: {
   bookings?: Booking[];
   loading: boolean;
   onStatusChange: (id: number, status: BookingStatus) => void;
   onNoShow: (id: number) => void;
+  businessDate?: string;
   compact?: boolean;
 }) {
   const [filter, setFilter] = useState<'all' | 'active' | 'today'>('all');
-  const today = new Date().toISOString().slice(0, 10);
+  const today = businessDate || '';
 
   const filtered = useMemo(() => {
     const list = bookings ?? [];
@@ -441,6 +445,7 @@ function ReservationsTable({
       return list.filter((b) => !['CANCELLED', 'CHECKED_OUT', 'NO_SHOW'].includes(b.status));
     }
     if (filter === 'today') {
+      if (!today) return [];
       return list.filter((b) => b.checkInDate === today || b.checkOutDate === today);
     }
     return list;

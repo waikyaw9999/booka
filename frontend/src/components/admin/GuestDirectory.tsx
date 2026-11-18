@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../../lib/api';
+import { useAuthStore } from '../../stores';
 import { money } from '../../lib/format';
 import { EmptyState, InlineAlert, StatusPill } from '../ui';
 import type { GuestProfile, VipTier } from '../../types';
@@ -14,6 +15,7 @@ const TIERS: VipTier[] = ['NONE', 'SILVER', 'GOLD', 'PLATINUM'];
 
 export function GuestDirectory({ token, initialGuestId }: Props) {
   const queryClient = useQueryClient();
+  const hotelId = useAuthStore((s) => s.user?.hotelId);
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(initialGuestId ?? null);
@@ -22,12 +24,12 @@ export function GuestDirectory({ token, initialGuestId }: Props) {
   const [success, setSuccess] = useState('');
 
   const { data: guests, isLoading } = useQuery({
-    queryKey: ['guests', submitted],
+    queryKey: ['guests', hotelId, submitted],
     queryFn: () => api.searchGuests(token, submitted),
   });
 
   const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['guest', selectedId],
+    queryKey: ['guest', hotelId, selectedId],
     queryFn: () => api.getGuest(token, selectedId!),
     enabled: selectedId != null,
   });
@@ -49,7 +51,7 @@ export function GuestDirectory({ token, initialGuestId }: Props) {
     setSuccess('');
     try {
       await api.updateGuest(token, profile.id, draft);
-      queryClient.invalidateQueries({ queryKey: ['guest', profile.id] });
+      queryClient.invalidateQueries({ queryKey: ['guest', hotelId, profile.id] });
       queryClient.invalidateQueries({ queryKey: ['guests'] });
       setSuccess('Guest profile saved.');
     } catch (err) {

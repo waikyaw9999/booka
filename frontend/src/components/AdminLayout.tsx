@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuthStore, useRagStore } from '../stores';
 
@@ -22,6 +22,7 @@ const NAV = [
 export function AdminLayout() {
   const { user, isStaff, logout } = useAuthStore();
   const { clearStaffMessages } = useRagStore();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -41,6 +42,7 @@ export function AdminLayout() {
 
   function handleLogout() {
     clearStaffMessages();
+    queryClient.clear();
     logout();
   }
 

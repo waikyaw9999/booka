@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../../lib/api';
+import { useAuthStore } from '../../stores';
 import { money } from '../../lib/format';
 import { ConfirmAction, EmptyState, InlineAlert, MetricTile, StatusPill } from '../ui';
 
@@ -10,13 +11,14 @@ interface Props {
 
 export function NightAuditPanel({ token }: Props) {
   const queryClient = useQueryClient();
+  const hotelId = useAuthStore((s) => s.user?.hotelId);
   const [note, setNote] = useState('');
   const [retain, setRetain] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['night-audit'],
+    queryKey: ['night-audit', hotelId],
     queryFn: () => api.getNightAudit(token),
   });
 

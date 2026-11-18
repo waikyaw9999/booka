@@ -5,6 +5,14 @@ import { useAuthStore } from '../stores';
 import type { UserRole } from '../types';
 import { InlineAlert } from '../components/ui';
 
+const DEMO_PROPERTIES = [
+  { property: 'Booka Grand Hotel', manager: 'admin@booka.com', desk: 'staff@booka.com' },
+  { property: 'Harbourview Suites', manager: 'harbour.admin@booka.com', desk: 'harbour.staff@booka.com' },
+  { property: 'Inle Lake Lodge', manager: 'inle.admin@booka.com', desk: 'inle.staff@booka.com' },
+  { property: 'Bagan Sandstone Inn', manager: 'bagan.admin@booka.com', desk: 'bagan.staff@booka.com' },
+  { property: 'Mandalay Heritage House', manager: 'mandalay.admin@booka.com', desk: 'mandalay.staff@booka.com' },
+] as const;
+
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,12 +21,13 @@ export function LoginPage() {
   const { setUser } = useAuthStore();
   const navigate = useNavigate();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function signIn(nextEmail: string, nextPassword: string) {
+    setEmail(nextEmail);
+    setPassword(nextPassword);
     setLoading(true);
     setError('');
     try {
-      const res = await api.login(email, password);
+      const res = await api.login(nextEmail, nextPassword);
       setUser({
         userId: res.userId,
         email: res.email,
@@ -35,6 +44,11 @@ export function LoginPage() {
     }
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await signIn(email, password);
+  }
+
   return (
     <div className="relative min-h-[70vh] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_0%,rgba(58,133,118,0.16),transparent)]" />
@@ -49,10 +63,33 @@ export function LoginPage() {
             booking experience.
           </p>
           {import.meta.env.DEV && (
-            <p className="text-sm text-ink/45">
-              Local demo: <span className="font-medium text-ink/70">admin@booka.com</span> /{' '}
-              <span className="font-medium text-ink/70">password</span>
-            </p>
+            <div className="max-w-md space-y-2 text-sm text-ink/55">
+              <p>
+                Demo password for every property:{' '}
+                <span className="font-medium text-ink/70">password</span>
+              </p>
+              <ul className="space-y-1.5">
+                {DEMO_PROPERTIES.map((entry) => (
+                  <li key={entry.property} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="font-medium text-ink/75">{entry.property}</span>
+                    <button
+                      type="button"
+                      className="text-forest underline-offset-4 hover:underline"
+                      onClick={() => signIn(entry.manager, 'password')}
+                    >
+                      Manager
+                    </button>
+                    <button
+                      type="button"
+                      className="text-forest underline-offset-4 hover:underline"
+                      onClick={() => signIn(entry.desk, 'password')}
+                    >
+                      Front desk
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           <Link to="/" className="btn-ghost inline-flex !px-0 text-sm">
             ← Back to guest site

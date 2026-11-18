@@ -19,7 +19,7 @@ export function BlackoutDateManager({ token, hotelId }: BlackoutDateManagerProps
   const [success, setSuccess] = useState('');
 
   const { data: blackouts, isLoading } = useQuery({
-    queryKey: ['admin-blackouts'],
+    queryKey: ['admin-blackouts', hotelId],
     queryFn: () => api.listAdminBlackoutDates(token),
   });
 

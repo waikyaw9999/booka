@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/changes/006-rich-demo-catalog.yaml
   - include:
       file: db/changelog/changes/007-commercial-operations.yaml
+  - include:
+      file: db/changelog/changes/008-property-logins.yaml

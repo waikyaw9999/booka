@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../../lib/api';
+import { useAuthStore } from '../../stores';
 import { resolveMediaUrl } from '../../lib/media';
 import type { HousekeepingStatus, RoomBoardItem } from '../../types';
 import { StatusPill, EmptyState, InlineAlert, ConfirmAction } from '../ui';
@@ -11,12 +12,13 @@ interface Props {
 
 export function RoomBoard({ token }: Props) {
   const queryClient = useQueryClient();
+  const hotelId = useAuthStore((s) => s.user?.hotelId);
   const [actionError, setActionError] = useState('');
   const [actionOk, setActionOk] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data: rooms, isLoading, error } = useQuery({
-    queryKey: ['room-board'],
+    queryKey: ['room-board', hotelId],
     queryFn: () => api.listRoomBoard(token),
   });
 
@@ -287,10 +289,11 @@ function Legend({ swatch, label }: { swatch: string; label: string }) {
 
 export function HousekeepingBoard({ token }: Props) {
   const queryClient = useQueryClient();
+  const hotelId = useAuthStore((s) => s.user?.hotelId);
   const [actionError, setActionError] = useState('');
   const [actionOk, setActionOk] = useState('');
   const { data: rooms, isLoading } = useQuery({
-    queryKey: ['room-board'],
+    queryKey: ['room-board', hotelId],
     queryFn: () => api.listRoomBoard(token),
   });
 

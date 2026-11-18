@@ -31,7 +31,7 @@ export function FolioPanel({ token }: Props) {
   const [success, setSuccess] = useState('');
 
   const enabled = resolvedBookingId != null && resolvedBookingId > 0;
-  const { data: folio, isLoading, isFetching, error: folioError } = useQuery({
+  const { data: folio, isLoading, error: folioError } = useQuery({
     queryKey: ['folio', resolvedBookingId],
     queryFn: () => api.getAdminFolio(token, resolvedBookingId!),
     enabled,
@@ -39,7 +39,7 @@ export function FolioPanel({ token }: Props) {
 
   const charges = folio?.lineItems.filter((l) => l.type !== 'PAYMENT') ?? [];
   const payments = folio?.lineItems.filter((l) => l.type === 'PAYMENT') ?? [];
-  const searching = resolving || (enabled && (isLoading || isFetching));
+  const searching = resolving || (enabled && isLoading && !folio);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();

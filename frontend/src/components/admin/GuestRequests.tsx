@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../../lib/api';
+import { useAuthStore } from '../../stores';
 import { EmptyState, InlineAlert, SegmentedControl, StatusPill } from '../ui';
 import type { GuestRequestCategory, GuestRequestStatus } from '../../types';
 
@@ -18,6 +19,7 @@ const CATEGORIES: { id: GuestRequestCategory; label: string }[] = [
 
 export function GuestRequests({ token }: Props) {
   const queryClient = useQueryClient();
+  const hotelId = useAuthStore((s) => s.user?.hotelId);
   const [filter, setFilter] = useState<'OPEN' | 'DONE' | 'all'>('OPEN');
   const [code, setCode] = useState('');
   const [category, setCategory] = useState<GuestRequestCategory>('LATE_CHECKOUT');
@@ -26,7 +28,7 @@ export function GuestRequests({ token }: Props) {
   const [success, setSuccess] = useState('');
 
   const { data: requests, isLoading } = useQuery({
-    queryKey: ['guest-requests'],
+    queryKey: ['guest-requests', hotelId],
     queryFn: () => api.listGuestRequests(token),
   });
 

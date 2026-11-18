@@ -1,8 +1,17 @@
 import { Link, Outlet } from 'react-router-dom';
-import { useAuthStore } from '../stores';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore, useRagStore } from '../stores';
 
 export function Layout() {
   const { user, logout, isStaff } = useAuthStore();
+  const clearStaffMessages = useRagStore((s) => s.clearStaffMessages);
+  const queryClient = useQueryClient();
+
+  function handleLogout() {
+    clearStaffMessages();
+    queryClient.clear();
+    logout();
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -30,7 +39,7 @@ export function Layout() {
                 <span className="hidden max-w-[10rem] truncate text-ink/55 sm:inline">{user.fullName}</span>
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="rounded-xl border border-sand bg-fog/80 px-3 py-1.5 text-forest transition hover:border-lagoon/40"
                 >
                   Logout

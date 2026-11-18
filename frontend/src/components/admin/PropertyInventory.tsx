@@ -40,7 +40,7 @@ export function PropertyInventory({ token, hotelId }: Props) {
   });
 
   const { data: rooms, isLoading: roomsLoading } = useQuery({
-    queryKey: ['room-board'],
+    queryKey: ['room-board', hotelId],
     queryFn: () => api.listRoomBoard(token),
   });
 
