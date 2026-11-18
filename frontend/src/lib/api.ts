@@ -11,6 +11,15 @@ import type {
   MaintenanceTicket,
   Folio,
   CheckoutSession,
+  GuestSummary,
+  GuestProfile,
+  VipTier,
+  NightAuditPreview,
+  NightAuditRecord,
+  GuestRequestItem,
+  GuestRequestCategory,
+  GuestRequestStatus,
+  PaymentMethod,
   HousekeepingStatus,
   TicketPriority,
   TicketStatus,
@@ -108,7 +117,7 @@ export const api = {
 
   listBookings: (token: string, page = 0) =>
     request<PageResponse<Booking>>(
-      `/api/v1/admin/bookings?page=${page}&size=20`,
+      `/api/v1/admin/bookings?page=${page}&size=100`,
       {},
       token,
     ),
@@ -213,6 +222,75 @@ export const api = {
 
   getAdminFolio: (token: string, bookingId: number) =>
     request<Folio>(`/api/v1/admin/folios/${bookingId}`, {}, token),
+
+  postFolioPayment: (
+    token: string,
+    bookingId: number,
+    body: { amount: number; method: PaymentMethod; reference?: string },
+  ) =>
+    request<Folio>(
+      `/api/v1/admin/folios/${bookingId}/payments`,
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
+  markNoShow: (token: string, id: number, retainOneNight: boolean) =>
+    request<Booking>(
+      `/api/v1/admin/bookings/${id}/no-show`,
+      { method: 'POST', body: JSON.stringify({ retainOneNight }) },
+      token,
+    ),
+
+  searchGuests: (token: string, q: string) =>
+    request<GuestSummary[]>(
+      `/api/v1/admin/guests?q=${encodeURIComponent(q)}`,
+      {},
+      token,
+    ),
+
+  getGuest: (token: string, id: number) =>
+    request<GuestProfile>(`/api/v1/admin/guests/${id}`, {}, token),
+
+  updateGuest: (
+    token: string,
+    id: number,
+    body: { nationality: string; vipTier: VipTier; notes: string; blacklisted: boolean },
+  ) =>
+    request<GuestProfile>(
+      `/api/v1/admin/guests/${id}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+      token,
+    ),
+
+  listGuestRequests: (token: string) =>
+    request<GuestRequestItem[]>('/api/v1/admin/guest-requests', {}, token),
+
+  createGuestRequest: (
+    token: string,
+    body: { bookingId: number; category: GuestRequestCategory; note: string },
+  ) =>
+    request<GuestRequestItem>(
+      '/api/v1/admin/guest-requests',
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
+  updateGuestRequest: (token: string, id: number, status: GuestRequestStatus) =>
+    request<GuestRequestItem>(
+      `/api/v1/admin/guest-requests/${id}`,
+      { method: 'PATCH', body: JSON.stringify({ status }) },
+      token,
+    ),
+
+  getNightAudit: (token: string) =>
+    request<NightAuditPreview>('/api/v1/admin/night-audit', {}, token),
+
+  closeNightAudit: (token: string, body: { note?: string; retainNoShowNight: boolean }) =>
+    request<NightAuditRecord>(
+      '/api/v1/admin/night-audit/close',
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
 
   postFolioCharge: (
     token: string,

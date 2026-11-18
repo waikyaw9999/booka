@@ -9,9 +9,12 @@ const NAV = [
   { id: 'front-office', label: 'Front Office', path: '/admin?tab=front-office' },
   { id: 'inventory', label: 'Inventory', path: '/admin?tab=inventory' },
   { id: 'reservations', label: 'Reservations', path: '/admin?tab=reservations' },
+  { id: 'guests', label: 'Guests', path: '/admin?tab=guests' },
+  { id: 'requests', label: 'Requests', path: '/admin?tab=requests' },
   { id: 'housekeeping', label: 'Housekeeping', path: '/admin?tab=housekeeping' },
   { id: 'maintenance', label: 'Maintenance', path: '/admin?tab=maintenance' },
   { id: 'folios', label: 'Folios', path: '/admin?tab=folios' },
+  { id: 'night-audit', label: 'Night audit', path: '/admin?tab=night-audit' },
   { id: 'blackouts', label: 'Blackouts', path: '/admin?tab=blackouts' },
   { id: 'assistant', label: 'Assistant', path: '/admin?tab=assistant' },
 ] as const;

@@ -6,6 +6,8 @@ import com.booka.domain.entity.Room;
 import com.booka.domain.entity.RoomType;
 import com.booka.domain.enums.*;
 import com.booka.dto.BookingDtos.*;
+import com.booka.dto.FolioDtos.FolioResponse;
+import com.booka.dto.FolioDtos.PostChargeRequest;
 import com.booka.exception.BusinessException;
 import com.booka.exception.ResourceNotFoundException;
 import com.booka.repository.BookingRepository;
@@ -137,6 +139,9 @@ public class BookingService {
         BigDecimal totalPrice = FolioService.totalWithTax(roomSubtotal);
 
         Guest guest = upsertGuest(guestEmail, guestFullName, guestPhone);
+        if (guest.isBlacklisted()) {
+            throw new BusinessException("This guest is blocked from new reservations");
+        }
 
         Booking booking = Booking.builder()
                 .hotelId(hotelId)
@@ -194,6 +199,9 @@ public class BookingService {
         }
         if (status == BookingStatus.CHECKED_OUT) {
             return checkOut(id);
+        }
+        if (status == BookingStatus.NO_SHOW) {
+            return markNoShow(id, true);
         }
         Booking booking = findBooking(id);
         validateStatusTransition(booking.getStatus(), status);
@@ -259,7 +267,9 @@ public class BookingService {
     @Transactional
     public BookingResponse assignRoom(Long bookingId, Long roomId) {
         Booking booking = findBooking(bookingId);
-        if (booking.getStatus() == BookingStatus.CHECKED_OUT || booking.getStatus() == BookingStatus.CANCELLED) {
+        if (booking.getStatus() == BookingStatus.CHECKED_OUT
+                || booking.getStatus() == BookingStatus.CANCELLED
+                || booking.getStatus() == BookingStatus.NO_SHOW) {
             throw new BusinessException("Cannot assign room to a closed booking");
         }
         Room room = roomRepository.findById(roomId)
@@ -346,12 +356,86 @@ public class BookingService {
         return "BK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
+    @Transactional
+    public BookingResponse markNoShow(Long id, boolean retainOneNight) {
+        Booking booking = findBooking(id);
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
+            throw new BusinessException("Only expected arrivals can be marked as no-show");
+        }
+        booking.setStatus(BookingStatus.NO_SHOW);
+        releaseOccupiedRoom(booking);
+        applyNoShowAllowance(booking, retainOneNight);
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    @Transactional
+    public void syncPaymentStatus(Long bookingId) {
+        Booking booking = findBooking(bookingId);
+        FolioResponse folio;
+        try {
+            folio = folioService.getFolioByBookingId(bookingId);
+        } catch (ResourceNotFoundException ex) {
+            return;
+        }
+        if (folio.paymentsTotal().signum() <= 0) {
+            return;
+        }
+        if (folio.balance().signum() <= 0) {
+            booking.setPaymentStatus(PaymentStatus.PAID);
+        } else {
+            booking.setPaymentStatus(PaymentStatus.PARTIAL);
+        }
+        bookingRepository.save(booking);
+    }
+
+    private void releaseOccupiedRoom(Booking booking) {
+        if (booking.getRoomId() == null) {
+            return;
+        }
+        roomRepository.findById(booking.getRoomId()).ifPresent(room -> {
+            if (room.getStatus() == RoomStatus.OCCUPIED) {
+                room.setStatus(RoomStatus.AVAILABLE);
+                roomRepository.save(room);
+            }
+        });
+    }
+
+    private void applyNoShowAllowance(Booking booking, boolean retainOneNight) {
+        FolioResponse folio;
+        try {
+            folio = folioService.getFolioByBookingId(booking.getId());
+        } catch (ResourceNotFoundException ex) {
+            return;
+        }
+        if (folio.status() == FolioStatus.CLOSED) {
+            return;
+        }
+        long nights = Math.max(1, ChronoUnit.DAYS.between(booking.getCheckInDate(), booking.getCheckOutDate()));
+        BigDecimal oneNight = booking.getTotalPrice().divide(BigDecimal.valueOf(nights), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal extras = folio.chargesTotal().subtract(booking.getTotalPrice());
+        if (extras.signum() < 0) {
+            extras = BigDecimal.ZERO;
+        }
+        BigDecimal target = (retainOneNight ? oneNight : BigDecimal.ZERO).add(extras);
+        BigDecimal delta = target.subtract(folio.chargesTotal());
+        if (delta.signum() == 0) {
+            return;
+        }
+        folioService.postCharge(booking.getId(), new PostChargeRequest(
+                FolioLineType.ADJUSTMENT,
+                retainOneNight ? "No-show — retain one night" : "No-show — charges waived",
+                delta,
+                "NOSHOW-" + booking.getId()));
+    }
+
     private void validateStatusTransition(BookingStatus current, BookingStatus next) {
         boolean valid = switch (current) {
-            case PENDING -> next == BookingStatus.CONFIRMED || next == BookingStatus.CANCELLED || next == BookingStatus.CHECKED_IN;
-            case CONFIRMED -> next == BookingStatus.CHECKED_IN || next == BookingStatus.CANCELLED;
+            case PENDING -> next == BookingStatus.CONFIRMED || next == BookingStatus.CANCELLED
+                    || next == BookingStatus.CHECKED_IN || next == BookingStatus.NO_SHOW;
+            case CONFIRMED -> next == BookingStatus.CHECKED_IN || next == BookingStatus.CANCELLED
+                    || next == BookingStatus.NO_SHOW;
             case CHECKED_IN -> next == BookingStatus.CHECKED_OUT;
-            case CHECKED_OUT, CANCELLED -> false;
+            case CHECKED_OUT, CANCELLED, NO_SHOW -> false;
         };
         if (!valid) {
             throw new BusinessException("Invalid status transition from " + current + " to " + next);

@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "hotels")
@@ -40,6 +41,10 @@ public class Hotel {
 
     @Column(name = "cancellation_policy", columnDefinition = "TEXT")
     private String cancellationPolicy;
+
+    /** Hotel business date. Null until the first night audit; then the date the desk is working. */
+    @Column(name = "business_date")
+    private LocalDate businessDate;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

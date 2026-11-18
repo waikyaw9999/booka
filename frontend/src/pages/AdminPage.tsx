@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../lib/api';
@@ -10,7 +10,11 @@ import { MaintenanceTickets } from '../components/admin/MaintenanceTickets';
 import { FolioPanel } from '../components/admin/FolioPanel';
 import { WalkInForm } from '../components/admin/WalkInForm';
 import { PropertyInventory } from '../components/admin/PropertyInventory';
+import { GuestDirectory } from '../components/admin/GuestDirectory';
+import { GuestRequests } from '../components/admin/GuestRequests';
+import { NightAuditPanel } from '../components/admin/NightAuditPanel';
 import { PageHeader, MetricTile, StatusPill, EmptyState, InlineAlert, SegmentedControl } from '../components/ui';
+import { money } from '../lib/format';
 import type { Booking, BookingStatus } from '../types';
 
 type Tab =
@@ -22,6 +26,9 @@ type Tab =
   | 'folios'
   | 'inventory'
   | 'blackouts'
+  | 'guests'
+  | 'requests'
+  | 'night-audit'
   | 'assistant';
 
 const TAB_IDS: Tab[] = [
@@ -33,6 +40,9 @@ const TAB_IDS: Tab[] = [
   'folios',
   'inventory',
   'blackouts',
+  'guests',
+  'requests',
+  'night-audit',
   'assistant',
 ];
 
@@ -48,6 +58,10 @@ export function AdminPage() {
   const rawTab = searchParams.get('tab') ?? 'dashboard';
   const tab: Tab = TAB_IDS.includes(rawTab as Tab) ? (rawTab as Tab) : 'dashboard';
 
+  useEffect(() => {
+    setFeedback(null);
+  }, [tab]);
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.getDashboard(user!.token),
@@ -60,19 +74,21 @@ export function AdminPage() {
     enabled: !!user?.token,
   });
 
-  const todayBookings = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const list = bookings?.content ?? [];
-    return {
-      arrivals: list.filter((b) => b.checkInDate === today && b.status !== 'CANCELLED' && b.status !== 'CHECKED_OUT'),
-      departures: list.filter((b) => b.checkOutDate === today && b.status === 'CHECKED_IN'),
-    };
-  }, [bookings]);
+  const businessDate = stats?.businessDate ?? '';
 
-  const occupancyPct =
-    stats && stats.totalRooms > 0
-      ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
-      : 0;
+  const todayBookings = useMemo(() => {
+    const list = bookings?.content ?? [];
+    if (!businessDate) {
+      return { arrivals: [] as Booking[], departures: [] as Booking[] };
+    }
+    return {
+      arrivals: list.filter(
+        (b) =>
+          (b.status === 'CONFIRMED' || b.status === 'PENDING') && b.checkInDate <= businessDate,
+      ),
+      departures: list.filter((b) => b.status === 'CHECKED_IN' && b.checkOutDate <= businessDate),
+    };
+  }, [bookings, businessDate]);
 
   async function handleStatusChange(id: number, status: BookingStatus) {
     setFeedback(null);
@@ -84,6 +100,20 @@ export function AdminPage() {
       setFeedback({ tone: 'success', text: `Booking #${id} updated to ${status.replace(/_/g, ' ')}.` });
     } catch (err) {
       setFeedback({ tone: 'error', text: getErrorMessage(err, 'Status update failed. Please try again.') });
+    }
+  }
+
+  async function handleNoShow(id: number) {
+    setFeedback(null);
+    try {
+      await api.markNoShow(user!.token, id, true);
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['night-audit'] });
+      queryClient.invalidateQueries({ queryKey: ['room-board'] });
+      setFeedback({ tone: 'success', text: `Booking #${id} marked as a no-show. One night was retained.` });
+    } catch (err) {
+      setFeedback({ tone: 'error', text: getErrorMessage(err, 'Could not mark that arrival as a no-show.') });
     }
   }
 
@@ -124,31 +154,64 @@ export function AdminPage() {
       {tab === 'dashboard' && (
         <div className="space-y-6 animate-tab">
           <PageHeader
-            eyebrow="Today"
+            eyebrow={businessDate ? `Business date ${businessDate}` : 'Today'}
             title="Property pulse"
-            description="Occupancy, arrivals, and active stays at a glance."
+            description="Occupancy, ADR, and RevPAR for the rooms in house, plus who still needs the desk."
           />
 
           {statsLoading && <p className="text-sm text-ink/45">Loading dashboard…</p>}
 
           {stats && (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <MetricTile label="Occupancy" value={`${occupancyPct}%`} hint={`${stats.occupiedRooms} of ${stats.totalRooms} rooms`} accent="forest" />
-              <MetricTile label="Arrivals today" value={stats.upcomingCheckIns} accent="lagoon" />
-              <MetricTile label="Departures today" value={stats.upcomingCheckOuts} accent="gold" />
-              <MetricTile label="Active bookings" value={stats.activeBookings} hint={`${stats.availableRooms} available · ${stats.maintenanceRooms} OOO`} accent="moss" />
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <MetricTile
+                  label="Occupancy"
+                  value={`${stats.occupancyPercent}%`}
+                  hint={`${stats.inHouse} in house · ${stats.maintenanceRooms} out of order`}
+                  accent="forest"
+                />
+                <MetricTile label="ADR" value={money(stats.adr)} hint="Average daily rate" accent="lagoon" />
+                <MetricTile label="RevPAR" value={money(stats.revpar)} hint={`Room revenue ${money(stats.roomRevenue)}`} accent="gold" />
+                <MetricTile
+                  label="Open balances"
+                  value={money(stats.openBalance)}
+                  hint={`${stats.dueOuts} due out · ${stats.noShowCandidates} no-show candidates`}
+                  accent={stats.openBalance > 0 ? 'danger' : 'moss'}
+                />
+              </div>
+              {stats.channels.length > 0 && (
+                <div className="ops-panel">
+                  <h2 className="font-display text-lg font-semibold text-ink">In-house by channel</h2>
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                    {stats.channels.map((channel) => (
+                      <li key={channel.channel} className="rounded-xl border border-sand/80 bg-fog/60 px-3 py-2.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/45">
+                          {channel.channel.replace(/_/g, ' ')}
+                        </p>
+                        <p className="mt-1 font-display text-xl font-bold text-forest">{money(channel.roomRevenue)}</p>
+                        <p className="text-xs text-ink/50">{channel.rooms} room{channel.rooms === 1 ? '' : 's'}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <PulseList
               title="Arrivals"
-              empty="No arrivals scheduled for today."
+              empty="No arrivals left on the business date."
               items={todayBookings.arrivals}
+              action={(booking) => (
+                <button type="button" className="btn-ghost !px-2 !py-1 text-xs" onClick={() => handleNoShow(booking.id)}>
+                  No-show
+                </button>
+              )}
             />
             <PulseList
-              title="Departures"
-              empty="No departures scheduled for today."
+              title="Due out"
+              empty="No in-house departures."
               items={todayBookings.departures}
             />
           </div>
@@ -157,6 +220,7 @@ export function AdminPage() {
             bookings={bookings?.content}
             loading={bookingsLoading}
             onStatusChange={handleStatusChange}
+            onNoShow={handleNoShow}
             compact
           />
         </div>
@@ -194,7 +258,44 @@ export function AdminPage() {
             bookings={bookings?.content}
             loading={bookingsLoading}
             onStatusChange={handleStatusChange}
+            onNoShow={handleNoShow}
           />
+        </div>
+      )}
+
+      {tab === 'guests' && (
+        <div className="space-y-5 animate-tab">
+          <PageHeader
+            eyebrow="CRM"
+            title="Guest profiles"
+            description="Returning guests, VIP tier, stay history, and a block on new reservations."
+          />
+          <GuestDirectory
+            token={user!.token}
+            initialGuestId={Number(searchParams.get('guestId')) || null}
+          />
+        </div>
+      )}
+
+      {tab === 'requests' && (
+        <div className="space-y-5 animate-tab">
+          <PageHeader
+            eyebrow="Front desk"
+            title="Guest requests"
+            description="Traces the desk promised — late checkout, airport, extra bed — until someone closes them."
+          />
+          <GuestRequests token={user!.token} />
+        </div>
+      )}
+
+      {tab === 'night-audit' && (
+        <div className="space-y-5 animate-tab">
+          <PageHeader
+            eyebrow="Accounting"
+            title="Night audit"
+            description="Review the day, clear due-outs, post no-shows, and roll the business date."
+          />
+          <NightAuditPanel token={user!.token} />
         </div>
       )}
 
@@ -225,7 +326,7 @@ export function AdminPage() {
           <PageHeader
             eyebrow="Billing"
             title="Guest folios"
-            description="Search a booking, review the ledger, and post F&B charges."
+            description="Search a booking, review the ledger, post F&B charges, and take cash, card, or transfer."
           />
           <FolioPanel token={user!.token} />
         </div>
@@ -283,10 +384,12 @@ function PulseList({
   title,
   empty,
   items,
+  action,
 }: {
   title: string;
   empty: string;
   items: Booking[];
+  action?: (booking: Booking) => ReactNode;
 }) {
   return (
     <div className="ops-panel">
@@ -304,7 +407,10 @@ function PulseList({
                   {b.roomNumber ? ` #${b.roomNumber}` : ''}
                 </p>
               </div>
-              <StatusPill label={b.status} />
+              <div className="flex shrink-0 items-center gap-2">
+                {action?.(b)}
+                <StatusPill label={b.status} />
+              </div>
             </li>
           ))}
         </ul>
@@ -317,11 +423,13 @@ function ReservationsTable({
   bookings,
   loading,
   onStatusChange,
+  onNoShow,
   compact,
 }: {
   bookings?: Booking[];
   loading: boolean;
   onStatusChange: (id: number, status: BookingStatus) => void;
+  onNoShow: (id: number) => void;
   compact?: boolean;
 }) {
   const [filter, setFilter] = useState<'all' | 'active' | 'today'>('all');
@@ -330,7 +438,7 @@ function ReservationsTable({
   const filtered = useMemo(() => {
     const list = bookings ?? [];
     if (filter === 'active') {
-      return list.filter((b) => !['CANCELLED', 'CHECKED_OUT'].includes(b.status));
+      return list.filter((b) => !['CANCELLED', 'CHECKED_OUT', 'NO_SHOW'].includes(b.status));
     }
     if (filter === 'today') {
       return list.filter((b) => b.checkInDate === today || b.checkOutDate === today);
@@ -411,18 +519,30 @@ function ReservationsTable({
                     <StatusPill label={b.status} />
                   </td>
                   <td>
-                    <select
-                      value={b.status}
-                      onChange={(e) => onStatusChange(b.id, e.target.value as BookingStatus)}
-                      className="input-field !py-1.5 !px-2 text-xs"
-                      title="Manual override — use Front Office for arrivals and departures"
-                    >
-                      <option value="PENDING">PENDING</option>
-                      <option value="CONFIRMED">CONFIRMED</option>
-                      <option value="CHECKED_IN">CHECKED_IN</option>
-                      <option value="CHECKED_OUT">CHECKED_OUT</option>
-                      <option value="CANCELLED">CANCELLED</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                      {(b.status === 'CONFIRMED' || b.status === 'PENDING') && (
+                        <button
+                          type="button"
+                          className="btn-ghost !px-2 !py-1 text-xs"
+                          onClick={() => onNoShow(b.id)}
+                        >
+                          No-show
+                        </button>
+                      )}
+                      <select
+                        value={b.status}
+                        onChange={(e) => onStatusChange(b.id, e.target.value as BookingStatus)}
+                        className="input-field !w-auto !py-1.5 !px-2 text-xs"
+                        title="Manual override — use Front Office for arrivals and departures"
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="CONFIRMED">CONFIRMED</option>
+                        <option value="CHECKED_IN">CHECKED_IN</option>
+                        <option value="CHECKED_OUT">CHECKED_OUT</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                        {b.status === 'NO_SHOW' && <option value="NO_SHOW">NO_SHOW</option>}
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}

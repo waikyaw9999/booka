@@ -14,6 +14,10 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     Page<Booking> findByHotelId(Long hotelId, Pageable pageable);
 
+    List<Booking> findAllByHotelId(Long hotelId);
+
+    List<Booking> findByHotelIdAndGuestIdOrderByCheckInDateDesc(Long hotelId, Long guestId);
+
     Page<Booking> findByStatus(BookingStatus status, Pageable pageable);
 
     @Query("""
@@ -54,7 +58,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             WHERE b.hotelId = :hotelId
             AND b.checkInDate >= :from
             AND b.checkInDate < :to
-            AND b.status <> com.booka.domain.enums.BookingStatus.CANCELLED
+            AND b.status NOT IN (
+                com.booka.domain.enums.BookingStatus.CANCELLED,
+                com.booka.domain.enums.BookingStatus.NO_SHOW)
             """)
     long countActiveByHotelIdAndCheckInRange(
             @Param("hotelId") Long hotelId,
@@ -64,7 +70,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
             SELECT COUNT(b) > 0 FROM Booking b
             WHERE b.roomId = :roomId
-            AND b.status NOT IN (com.booka.domain.enums.BookingStatus.CANCELLED, com.booka.domain.enums.BookingStatus.CHECKED_OUT)
+            AND b.status NOT IN (
+                com.booka.domain.enums.BookingStatus.CANCELLED,
+                com.booka.domain.enums.BookingStatus.CHECKED_OUT,
+                com.booka.domain.enums.BookingStatus.NO_SHOW)
             AND b.checkInDate < :checkOut
             AND b.checkOutDate > :checkIn
             AND (:excludeId IS NULL OR b.id <> :excludeId)

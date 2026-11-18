@@ -2,6 +2,8 @@ package com.booka.dto;
 
 import com.booka.domain.enums.FolioLineType;
 import com.booka.domain.enums.FolioStatus;
+import com.booka.domain.enums.PaymentMethod;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -38,5 +40,11 @@ public final class FolioDtos {
             @NotBlank String description,
             @NotNull BigDecimal amount,
             String externalRef
+    ) {}
+
+    public record PostPaymentRequest(
+            @NotNull @DecimalMin(value = "0.01", message = "Amount must be greater than zero") BigDecimal amount,
+            @NotNull PaymentMethod method,
+            String reference
     ) {}
 }
