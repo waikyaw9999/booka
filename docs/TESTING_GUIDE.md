@@ -40,19 +40,22 @@ If image or inventory APIs return 500 after a schema change, rebuild the backend
 - `GROQ_API_KEY` in `.env` — richer concierge answers. Without it, FAQ/availability still run from documents + inventory tools; answers may be thinner.
 - Stripe keys are **not** required for guest booking (pay at property).
 
-### Demo accounts (separate property tenancy)
+### Demo accounts (username + password)
 
 Each property has its **own** manager and front-desk login. Ops data is isolated by `hotelId` — Harbourview staff cannot open Booka Grand bookings/folios/rooms. See [`MULTI_PROPERTY.md`](./MULTI_PROPERTY.md).
 
-**Password for every demo user:** `password`
-
-| Property | Manager | Front desk |
-|----------|---------|------------|
-| Booka Grand Hotel | `admin@booka.com` | `staff@booka.com` |
-| Harbourview Suites | `harbour.admin@booka.com` | `harbour.staff@booka.com` |
-| Inle Lake Lodge | `inle.admin@booka.com` | `inle.staff@booka.com` |
-| Bagan Sandstone Inn | `bagan.admin@booka.com` | `bagan.staff@booka.com` |
-| Mandalay Heritage House | `mandalay.admin@booka.com` | `mandalay.staff@booka.com` |
+| Property | Role | Username | Password |
+|----------|------|----------|----------|
+| Booka Grand Hotel | Manager | `admin@booka.com` | `password` |
+| Booka Grand Hotel | Front desk | `staff@booka.com` | `password` |
+| Harbourview Suites | Manager | `harbour.admin@booka.com` | `password` |
+| Harbourview Suites | Front desk | `harbour.staff@booka.com` | `password` |
+| Inle Lake Lodge | Manager | `inle.admin@booka.com` | `password` |
+| Inle Lake Lodge | Front desk | `inle.staff@booka.com` | `password` |
+| Bagan Sandstone Inn | Manager | `bagan.admin@booka.com` | `password` |
+| Bagan Sandstone Inn | Front desk | `bagan.staff@booka.com` | `password` |
+| Mandalay Heritage House | Manager | `mandalay.admin@booka.com` | `password` |
+| Mandalay Heritage House | Front desk | `mandalay.staff@booka.com` | `password` |
 
 **Buyer-style onboarding (optional):** open `/register-property`, create a new hotel + manager. Expect starter **Standard/Deluxe** rooms in Inventory, **TRIAL** on Billing, and Team invite/deactivate/reset-password. Activate Starter via the billing stub. The new hotel also appears on the guest site.
 
@@ -70,42 +73,51 @@ Keep a notepad: you will write down a **new** confirmation code from the guest b
 
 ---
 
-## 2. Guest walkthrough — discover and book
+## 2. Guest walkthrough — Agoda-style search → book
 
-**Goal:** Browse a hotel, search dates, confirm a stay with pay-at-property (no Stripe redirect).
+**Goal:** Search by dates, pick a property, choose a room, open room detail, confirm pay-at-property (no Stripe redirect).
 
-### 2.1 Home
+Flow: **Search → available properties → rooms → room detail → book**.
 
-1. Open the guest home URL.
-2. Confirm the brand **Booka** reads as the hero-level identity (fonts: Sora / DM Sans; light hospitality palette).
-3. Scroll to featured stays.
+### 2.1 Home — search (step 1)
 
-**Expect:** About **five** properties (Booka Grand, Harbourview, Inle, Bagan, Mandalay) with images (or Unsplash fallback), city, and short copy. Browser tab shows the Booka favicon.
+1. Open the guest home URL (`/`).
+2. Confirm the brand **Booka** is hero-level (fonts: Sora / DM Sans; light hospitality palette).
+3. Confirm the stay search bar is in the first viewport (destination, check-in, check-out, guests, **Search**).
+4. Optionally scroll to featured properties (browse without dates).
 
-### 2.2 Hotel detail
+**Expect:** Search is the primary CTA. Featured stays (about **five** Myanmar properties) may appear below. Favicon loads.
 
-1. Open **Booka Grand Hotel** (or any property).
-2. Scan hero / gallery, amenities, and cancellation policy.
-3. Find the availability form (check-in, check-out, guests).
+### 2.2 Available properties (step 2)
 
-**Expect:** Gallery or fallback imagery; form present; no raw technical errors.
+1. Leave destination blank (or type a city such as `Yangon`), set check-in **today + 7**, check-out **today + 9**, guests **2**.
+2. Click **Search**.
 
-### 2.3 Dates and availability
+**Expect:** `/search` lists only properties with at least one sellable room for those dates. Each row shows image, city, from/night, stay-from subtotal, room-type / free-room counts, and **View rooms**.
 
-1. Set check-in to **today + 7 days**, check-out to **today + 9 days**, guests = **2**.
-2. Run search.
+**Optional negative:** Search dates that only hit a full-property blackout (e.g. Harbourview **2026-12-10 → 2026-12-13** with a city filter that isolates it).
 
-**Expect:** Room types with nightly rate, **room subtotal** for the stay, tax note, and available count. Labels should not claim “online payment complete.”
+**Expect:** Friendly empty state — no stack / “500”.
 
-**Optional negative check:** On **Harbourview Suites**, search check-in **2026-12-10**, check-out **2026-12-13**.
+### 2.3 Property rooms (step 3)
 
-**Expect:** Friendly empty / no rooms message (seed blackout). No stack traces or “500” text.
+1. Open **Booka Grand Hotel** (or any hit) via **View rooms**.
+2. Confirm URL keeps `checkIn` / `checkOut` / `guests`.
+3. Scan hero, gallery, amenities, and the **Available rooms** list.
 
-### 2.4 Checkout (pay at property)
+**Expect:** Room types with nightly rate, stay subtotal, available count, and **View room**. You can change dates on this page and re-search without leaving the property.
 
-1. Choose a room type → **Book** / continue.
-2. Enter guest name and email (use a test address).
-3. Review the stay summary before confirming.
+### 2.4 Room detail (step 4)
+
+1. Click **View room** on a room type.
+2. Review image, description/amenities, stay summary, and room subtotal.
+
+**Expect:** `/hotels/:id/rooms/:roomTypeId?…` with **Continue to book** and pay-at-property note. Back link returns to the rooms list with the same stay params.
+
+### 2.5 Checkout (pay at property)
+
+1. **Continue to book** → enter guest name and email (test address).
+2. Review the stay summary before confirming.
 
 **Expect:**
 
@@ -114,16 +126,17 @@ Keep a notepad: you will write down a **new** confirmation code from the guest b
 - **Total due at property**  
 - CTA language like “Confirm now · pay at property” (not Stripe / “secure checkout” promises)
 
-4. Confirm the booking.
+3. Confirm the booking.
 
 **Expect:** Success screen with a confirmation code like `BK-…`, stay dates, and pay-at-property messaging.
 
-5. **Write down the confirmation code** — you need it in §4.
+4. **Write down the confirmation code** — you need it in §4.
 
-### 2.5 Quick negative (optional)
+### 2.6 Quick negatives (optional)
 
+- Open a featured card with **no** dates → rooms page asks for dates before priced inventory.
 - Open `/hotels/99999` → friendly not-found, not a stack dump.
-- Shrink the browser to phone width on home → hotel → book → usable layout.
+- Phone width: home → search results → rooms → room detail → book → usable layout.
 
 ---
 
@@ -155,9 +168,9 @@ Note: Bagan is blacked out those nights; other hotels may still show options. Fo
 ### 3.4 View & book deep link
 
 1. After a dated availability answer with room cards, click **View & book**.
-2. Confirm you land on the hotel page with those dates applied and availability searched (or search starts automatically).
+2. Confirm you land on the property rooms (or room) page with those dates applied and availability searched.
 
-**Expect:** Navigation works; dates match the chat; you can continue into booking if inventory exists.
+**Expect:** Navigation works; dates match the chat; you can continue into room detail → book if inventory exists.
 
 ---
 
@@ -191,7 +204,7 @@ Two good paths (pick one):
 
 | Path | Login | Booking to assign |
 |------|--------|-------------------|
-| **A — your new guest booking** | `staff@booka.com` if you booked Booka Grand | Code from §2.4 |
+| **A — your new guest booking** | `staff@booka.com` if you booked Booka Grand | Code from §2.5 |
 | **B — seed unassigned** | `harbour.staff@booka.com` | `BK-DEMO-104` (Dec 5–8 2026, room type suite) |
 
 ### 5.1 Room board
@@ -323,7 +336,7 @@ Cross-reference Pass/Fail IDs in [`TEST_CASES.md`](./TEST_CASES.md) (e.g. G-07, 
 
 | Block | Time | Sections |
 |-------|------|----------|
-| Guest book | 20 min | §2 |
+| Guest Agoda flow | 25 min | §2 (search → properties → rooms → detail → book) |
 | Concierge | 10 min | §3 |
 | Desk + HK | 25 min | §4–§6 |
 | Folio / blackout / images | 15 min | §7 |

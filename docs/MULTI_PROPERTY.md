@@ -31,7 +31,7 @@ Booka is sold as a **shared guest marketplace** with **per-property staff tenanc
    Creates hotel (30-day **TRIAL**), seeds Standard + Deluxe rooms (101/102/201), ensures channel keys when `CHANNEL_API_KEY` is set, creates manager (`ADMIN`).
 2. **Invite team:** Operations → **Team** — create STAFF, deactivate/reactivate, reset password.
 3. **Billing:** Operations → **Billing** — plan/status on the hotel; **Activate Starter (stub payment)** simulates subscription without Stripe Billing yet.
-4. **Demo seed:** Five Myanmar properties with separate manager/desk logins (password `password`) — see README / TESTING_GUIDE. Seeded hotels are marked **STARTER / ACTIVE**.
+4. **Demo seed:** Five Myanmar properties with separate manager/desk logins (username + password per account in README / TESTING_GUIDE / TEST_CASES). Seeded hotels are marked **STARTER / ACTIVE**.
 
 ## Surfaces
 

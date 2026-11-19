@@ -58,15 +58,20 @@ CI/CD ships images to Docker Hub, then SSHs to the VPS to pull and restart Compo
 Production HTTPS: Caddy on the VPS terminates Let's Encrypt TLS for `booka.juneko.online` and proxies to the internal frontend. See **[docs/VPS_DOCKER_CICD.md](docs/VPS_DOCKER_CICD.md)** (§7 HTTPS with Caddy) for DNS, firewall, `scp`, and verify steps.
 ## Demo credentials
 
-Each property has its own manager and front-desk login (per-property tenancy). Password for every demo account is `password`. Ops APIs are scoped to the signed-in hotel — see [`docs/MULTI_PROPERTY.md`](docs/MULTI_PROPERTY.md). New buyers can also use **List your property** at `/register-property`.
+Each property has its own manager and front-desk login (per-property tenancy). Ops APIs are scoped to the signed-in hotel — see [`docs/MULTI_PROPERTY.md`](docs/MULTI_PROPERTY.md). New buyers can also use **List your property** at `/register-property`. Full Pass/Fail pack: [`docs/TEST_CASES.md`](docs/TEST_CASES.md); walkthrough: [`docs/TESTING_GUIDE.md`](docs/TESTING_GUIDE.md).
 
-| Property | Manager | Front desk |
-|----------|---------|------------|
-| Booka Grand Hotel | admin@booka.com | staff@booka.com |
-| Harbourview Suites | harbour.admin@booka.com | harbour.staff@booka.com |
-| Inle Lake Lodge | inle.admin@booka.com | inle.staff@booka.com |
-| Bagan Sandstone Inn | bagan.admin@booka.com | bagan.staff@booka.com |
-| Mandalay Heritage House | mandalay.admin@booka.com | mandalay.staff@booka.com |
+| Property | Role | Username | Password |
+|----------|------|----------|----------|
+| Booka Grand Hotel | Manager | `admin@booka.com` | `password` |
+| Booka Grand Hotel | Front desk | `staff@booka.com` | `password` |
+| Harbourview Suites | Manager | `harbour.admin@booka.com` | `password` |
+| Harbourview Suites | Front desk | `harbour.staff@booka.com` | `password` |
+| Inle Lake Lodge | Manager | `inle.admin@booka.com` | `password` |
+| Inle Lake Lodge | Front desk | `inle.staff@booka.com` | `password` |
+| Bagan Sandstone Inn | Manager | `bagan.admin@booka.com` | `password` |
+| Bagan Sandstone Inn | Front desk | `bagan.staff@booka.com` | `password` |
+| Mandalay Heritage House | Manager | `mandalay.admin@booka.com` | `password` |
+| Mandalay Heritage House | Front desk | `mandalay.staff@booka.com` | `password` |
 
 ## Local development
 
