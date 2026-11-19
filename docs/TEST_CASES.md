@@ -4,34 +4,46 @@ For a **step-by-step walkthrough** (ordered guest → desk → ops), use [`TESTI
 
 Use this pack for launch / regression testing. Mark each case **Pass / Fail / Blocked** and note environment (local `localhost:5173` or prod `https://booka.juneko.online`).
 
-**Password for all demo staff accounts:** `password`
+### Demo accounts (username + password)
 
-| Property | Manager | Front desk |
-|----------|---------|------------|
-| Booka Grand Hotel | admin@booka.com | staff@booka.com |
-| Harbourview Suites | harbour.admin@booka.com | harbour.staff@booka.com |
-| Inle Lake Lodge | inle.admin@booka.com | inle.staff@booka.com |
-| Bagan Sandstone Inn | bagan.admin@booka.com | bagan.staff@booka.com |
-| Mandalay Heritage House | mandalay.admin@booka.com | mandalay.staff@booka.com |
+Every seeded property has its own manager and front-desk login. Ops data is scoped by hotel — staff from one property cannot open another’s bookings/folios/rooms.
+
+| Property | Role | Username | Password |
+|----------|------|----------|----------|
+| Booka Grand Hotel | Manager | `admin@booka.com` | `password` |
+| Booka Grand Hotel | Front desk | `staff@booka.com` | `password` |
+| Harbourview Suites | Manager | `harbour.admin@booka.com` | `password` |
+| Harbourview Suites | Front desk | `harbour.staff@booka.com` | `password` |
+| Inle Lake Lodge | Manager | `inle.admin@booka.com` | `password` |
+| Inle Lake Lodge | Front desk | `inle.staff@booka.com` | `password` |
+| Bagan Sandstone Inn | Manager | `bagan.admin@booka.com` | `password` |
+| Bagan Sandstone Inn | Front desk | `bagan.staff@booka.com` | `password` |
+| Mandalay Heritage House | Manager | `mandalay.admin@booka.com` | `password` |
+| Mandalay Heritage House | Front desk | `mandalay.staff@booka.com` | `password` |
 
 **Demo booking codes (seed):** `BK-DEMO-101` … `BK-DEMO-110`
 
 ---
 
-## A. Guest site — discovery & booking
+## A. Guest site — Agoda-style search → book
+
+Flow under test: **(1) Search → (2) available properties → (3) rooms → (4) room detail → book**.
 
 | ID | Feature | Steps | Expected |
 |----|---------|-------|----------|
-| G-01 | Home / catalog | Open guest home. Scroll to Featured stays. | At least several hotels (seed has 5) with images, city, short description. Layout looks light and readable. |
-| G-02 | Hotel detail | Open any hotel card. | Hero/gallery images (or fallback), amenities, cancellation policy, availability form. |
-| G-03 | Date validation | On hotel detail, set check-out ≤ check-in; try past check-in if allowed by UI. | Check-in min = today; check-out after check-in; invalid ranges blocked or auto-corrected. |
-| G-04 | Availability search | Search a valid future range (e.g. +7 to +9 days), 2 guests. | Room types listed with nightly rate, **room subtotal** (not “total stay”), tax note, available count. |
-| G-05 | Empty availability | Search dates on a known blackout (e.g. Harbourview Dec 10–13 2026 property-wide). | Friendly empty / no rooms message; no crash; no technical error text. |
-| G-06 | Book flow | From availability, Book → enter guest name/email → Confirm. | Checkout shows room subtotal + 10% tax + **total due at property**. CTA is pay-at-property language (no Stripe/secure checkout promises). |
-| G-07 | Confirmation | Complete booking. | Success screen with confirmation code, stay summary, “pay at property”. Code looks like `BK-…`. |
-| G-08 | Pricing honesty | Note room subtotal on hotel page vs total on checkout. | Checkout total = subtotal × 1.10 (tax). Labels make this clear. |
-| G-09 | Broken hotel link | Open `/hotels/99999`. | Friendly “not found” / load error — not a raw stack or “500”. |
-| G-10 | Mobile guest | Resize to phone width: home, hotel, book. | Usable nav, forms, and CTAs; no horizontal overflow. |
+| G-01 | Home search (step 1) | Open guest home `/`. | Hero shows **Booka** + stay search bar (destination, check-in, check-out, guests, Search). Optional featured properties below. |
+| G-02 | Search results (step 2) | Enter city (optional), dates today+7 → today+9, 2 guests → Search. | Lands on `/search` with **Available stays**; only properties with sellable inventory for those dates; each row shows from/night, stay from, room-type count. |
+| G-03 | Date validation | On home or `/search`, set check-out ≤ check-in; try past check-in. | Check-in min = today; check-out auto-bumped after check-in; invalid submit blocked. |
+| G-04 | Empty property search | Search Harbourview-focused dates that hit the Dec 10–13 2026 blackout (or filter city so only blacked-out inventory applies). | Friendly “No properties for these dates” (or empty list) — no crash / stack / “500”. |
+| G-05 | Property rooms (step 3) | From a search hit, open **View rooms** (or `/hotels/:id` with stay query). | Step 3 rooms page: property hero, stay bar, **Available rooms** with rates, counts, **View room** CTA. Dates from search preserved in URL. |
+| G-06 | Change dates on property | On rooms page, change dates in the stay bar and search again. | Availability refreshes for the new range without leaving the property. |
+| G-07 | Room detail (step 4) | Click **View room** on a room type. | `/hotels/:id/rooms/:roomTypeId` shows image, amenities, stay summary, room subtotal, **Continue to book**. |
+| G-08 | Book flow | From room detail → Continue to book → enter guest name/email → Confirm. | Checkout shows room subtotal + 10% tax + **total due at property**. CTA is pay-at-property language (no Stripe promises). |
+| G-09 | Confirmation | Complete booking. | Success with confirmation code `BK-…`, stay summary, “pay at property”. |
+| G-10 | Pricing honesty | Note room subtotal on room detail vs total on checkout. | Checkout total = subtotal × 1.10 (tax). Labels make this clear. |
+| G-11 | Browse without dates | From home, open a featured property card (no dates). | Rooms page loads; prompts to choose dates before listing priced rooms. |
+| G-12 | Broken hotel link | Open `/hotels/99999`. | Friendly “not found” — not a raw stack or “500”. |
+| G-13 | Mobile guest | Phone width: home search → results → rooms → room detail → book. | Usable nav/forms/CTAs; no horizontal overflow. |
 
 ---
 
@@ -42,7 +54,7 @@ Use this pack for launch / regression testing. Mark each case **Pass / Fail / Bl
 | R-01 | FAQ | Ask “What is the cancellation policy?” on home or hotel. | Grounded answer; citations when available. No inventing policies. |
 | R-02 | Clarify dates | Ask “Any rooms available?” without dates. | Asks for dates / shows suggested date-range chips. |
 | R-03 | Natural dates | Ask “available rooms for December 20 to 22”. | Uses **Dec 20 → Dec 22**, not a Dec 1–3 sample. |
-| R-04 | Availability cards | After a dated availability question, click **View & book**. | Opens hotel with dates applied and availability searched (same-page deep link works). |
+| R-04 | Availability cards | After a dated availability question, click **View & book**. | Opens property rooms (or detail) with dates applied and availability searched. |
 | R-05 | Friendly errors | Stop backend briefly and send a chat message (optional). | User-friendly message only — no “Internal Server Error” / exception dumps in the chat UI. |
 
 ---
@@ -126,7 +138,7 @@ Use this pack for launch / regression testing. Mark each case **Pass / Fail / Bl
 
 | ID | Feature | Steps | Expected |
 |----|---------|-------|----------|
-| X-01 | End-to-end happy path | Guest books → note code → staff assigns room by code → check-in → post folio charge → check-out. | Full path works without technical errors in UI. |
+| X-01 | End-to-end happy path | Guest: search → property → room → detail → book → note code → staff assigns by code → check-in → folio charge → check-out. | Full path works without technical errors in UI. |
 | X-02 | Multi-property | Repeat FO smoke on a second property login (e.g. Harbourview). | Data stays scoped; no cross-hotel room bleed. |
 | X-03 | Favicon & branding | Check browser tab icon and fonts (Sora/DM Sans). | Favicon loads; UI looks light commercial hospitality (not purple/generic). |
 | X-04 | API down | Stop backend; reload guest home. | Friendly load error (not “port 8080” or stack traces). |
@@ -135,9 +147,9 @@ Use this pack for launch / regression testing. Mark each case **Pass / Fail / Bl
 
 ## Suggested test order (1–2 testers, ~90 minutes)
 
-1. **G-01 → G-07** (guest book)  
+1. **G-01 → G-09** (guest Agoda flow: search → properties → rooms → detail → book)  
 2. **R-02 → R-04** (concierge dates)  
-3. **S-01 → FO-05** (desk)  
+3. **S-01 → FO-05** (desk — use credentials table above)  
 4. **HK-01 → F-02** (ops depth)  
 5. **I-01, B-02, X-01** (launch confidence)
 
