@@ -91,9 +91,14 @@ export function LoginPage() {
               </ul>
             </div>
           )}
-          <Link to="/" className="btn-ghost inline-flex !px-0 text-sm">
-            ← Back to guest site
-          </Link>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            <Link to="/register-property" className="text-forest underline-offset-4 hover:underline">
+              List your property
+            </Link>
+            <Link to="/" className="btn-ghost inline-flex !px-0">
+              ← Back to guest site
+            </Link>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="surface-elevated animate-rise-delay space-y-4 p-6 sm:p-8">

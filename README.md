@@ -58,7 +58,7 @@ CI/CD ships images to Docker Hub, then SSHs to the VPS to pull and restart Compo
 Production HTTPS: Caddy on the VPS terminates Let's Encrypt TLS for `booka.juneko.online` and proxies to the internal frontend. See **[docs/VPS_DOCKER_CICD.md](docs/VPS_DOCKER_CICD.md)** (§7 HTTPS with Caddy) for DNS, firewall, `scp`, and verify steps.
 ## Demo credentials
 
-Each property has its own manager and front-desk login. Password for every demo account is `password`.
+Each property has its own manager and front-desk login (per-property tenancy). Password for every demo account is `password`. Ops APIs are scoped to the signed-in hotel — see [`docs/MULTI_PROPERTY.md`](docs/MULTI_PROPERTY.md). New buyers can also use **List your property** at `/register-property`.
 
 | Property | Manager | Front desk |
 |----------|---------|------------|

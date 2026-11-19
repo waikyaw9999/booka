@@ -20,6 +20,29 @@ export interface Hotel {
   cancellationPolicy: string;
   images?: PropertyImage[];
   primaryImageUrl?: string | null;
+  subscriptionPlan?: string | null;
+  subscriptionStatus?: string | null;
+  trialEndsAt?: string | null;
+  subscriptionRenewsAt?: string | null;
+}
+
+export interface HotelBilling {
+  hotelId: number;
+  hotelName: string;
+  subscriptionPlan: string;
+  subscriptionStatus: string;
+  trialEndsAt: string | null;
+  subscriptionRenewsAt: string | null;
+  billingNote: string;
+}
+
+export interface StaffMember {
+  id: number;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  hotelId: number | null;
+  active: boolean;
 }
 
 export interface PropertyImage {

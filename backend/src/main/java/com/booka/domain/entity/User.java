@@ -37,6 +37,11 @@ public class User {
     @Column(name = "hotel_id")
     private Long hotelId;
 
+    /** When false, staff cannot sign in. Guests are typically left active. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -35,6 +35,12 @@ public class AuthController {
         return authService.register(request);
     }
 
+    /** Creates a hotel and binds a manager (ADMIN) account to that property. */
+    @PostMapping("/register-property")
+    AuthResponse registerProperty(@Valid @RequestBody RegisterPropertyRequest request) {
+        return authService.registerProperty(request);
+    }
+
     @GetMapping("/me")
     UserResponse me(@AuthenticationPrincipal BookaUserDetails user) {
         return authService.getCurrentUser(user);

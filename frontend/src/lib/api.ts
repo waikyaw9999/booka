@@ -25,6 +25,8 @@ import type {
   TicketStatus,
   FolioLineType,
   PropertyImage,
+  StaffMember,
+  HotelBilling,
 } from '../types';
 import { normalizeHttpError, normalizeNetworkError } from './errors';
 
@@ -73,6 +75,60 @@ export const api = {
     request<{ token: string; userId: number; email: string; fullName: string; role: string; hotelId: number | null }>(
       '/api/v1/auth/register',
       { method: 'POST', body: JSON.stringify({ email, password, fullName }) },
+    ),
+
+  registerProperty: (body: {
+    hotelName: string;
+    description?: string;
+    address: string;
+    city: string;
+    country: string;
+    amenities?: string;
+    cancellationPolicy?: string;
+    managerEmail: string;
+    managerPassword: string;
+    managerFullName: string;
+  }) =>
+    request<{ token: string; userId: number; email: string; fullName: string; role: string; hotelId: number | null }>(
+      '/api/v1/auth/register-property',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
+  listStaff: (token: string) =>
+    request<StaffMember[]>('/api/v1/admin/staff', {}, token),
+
+  inviteStaff: (
+    token: string,
+    body: { email: string; password: string; fullName: string },
+  ) =>
+    request<StaffMember>(
+      '/api/v1/admin/staff',
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
+  setStaffActive: (token: string, id: number, active: boolean) =>
+    request<StaffMember>(
+      `/api/v1/admin/staff/${id}/active?active=${active}`,
+      { method: 'PATCH' },
+      token,
+    ),
+
+  resetStaffPassword: (token: string, id: number, newPassword: string) =>
+    request<StaffMember>(
+      `/api/v1/admin/staff/${id}/reset-password`,
+      { method: 'POST', body: JSON.stringify({ newPassword }) },
+      token,
+    ),
+
+  getBilling: (token: string) =>
+    request<HotelBilling>('/api/v1/admin/billing', {}, token),
+
+  activateStarterPlan: (token: string) =>
+    request<HotelBilling>(
+      '/api/v1/admin/billing/activate-starter',
+      { method: 'POST' },
+      token,
     ),
 
   getHotels: () => request<Hotel[]>('/api/v1/hotels'),

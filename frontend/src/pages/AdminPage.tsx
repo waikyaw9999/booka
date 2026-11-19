@@ -10,6 +10,8 @@ import { MaintenanceTickets } from '../components/admin/MaintenanceTickets';
 import { FolioPanel } from '../components/admin/FolioPanel';
 import { WalkInForm } from '../components/admin/WalkInForm';
 import { PropertyInventory } from '../components/admin/PropertyInventory';
+import { TeamAccounts } from '../components/admin/TeamAccounts';
+import { BillingPanel } from '../components/admin/BillingPanel';
 import { GuestDirectory } from '../components/admin/GuestDirectory';
 import { GuestRequests } from '../components/admin/GuestRequests';
 import { NightAuditPanel } from '../components/admin/NightAuditPanel';
@@ -25,6 +27,8 @@ type Tab =
   | 'maintenance'
   | 'folios'
   | 'inventory'
+  | 'team'
+  | 'billing'
   | 'blackouts'
   | 'guests'
   | 'requests'
@@ -39,6 +43,8 @@ const TAB_IDS: Tab[] = [
   'maintenance',
   'folios',
   'inventory',
+  'team',
+  'billing',
   'blackouts',
   'guests',
   'requests',
@@ -55,6 +61,7 @@ export function AdminPage() {
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [searchParams] = useSearchParams();
 
+  const hotelId = user?.hotelId;
   const rawTab = searchParams.get('tab') ?? 'dashboard';
   const tab: Tab = TAB_IDS.includes(rawTab as Tab) ? (rawTab as Tab) : 'dashboard';
 
@@ -247,7 +254,7 @@ export function AdminPage() {
           />
           <WalkInForm
             token={user!.token}
-            hotelId={user!.hotelId ?? 1}
+            hotelId={hotelId!}
             onCreated={() => {
               refetch();
               queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -319,7 +326,7 @@ export function AdminPage() {
             title="Maintenance"
             description="Track work orders and mark rooms out of order when needed."
           />
-          <MaintenanceTickets token={user!.token} hotelId={user!.hotelId ?? 1} />
+          <MaintenanceTickets token={user!.token} hotelId={hotelId!} />
         </div>
       )}
 
@@ -341,7 +348,29 @@ export function AdminPage() {
             title="Inventory"
             description="Add rooms and keep hotel and room-type amenities current."
           />
-          <PropertyInventory token={user!.token} hotelId={user!.hotelId ?? 1} />
+          <PropertyInventory token={user!.token} hotelId={hotelId!} />
+        </div>
+      )}
+
+      {tab === 'team' && user?.role === 'ADMIN' && hotelId != null && (
+        <div className="space-y-5 animate-tab">
+          <PageHeader
+            eyebrow="Access"
+            title="Property team"
+            description="Invite front desk, deactivate accounts, and reset passwords for this hotel only."
+          />
+          <TeamAccounts token={user.token} hotelId={hotelId} />
+        </div>
+      )}
+
+      {tab === 'billing' && user?.role === 'ADMIN' && hotelId != null && (
+        <div className="space-y-5 animate-tab">
+          <PageHeader
+            eyebrow="Subscription"
+            title="Property billing"
+            description="Plan status for this hotel. Stripe subscription Checkout can replace the stub later."
+          />
+          <BillingPanel token={user.token} hotelId={hotelId} />
         </div>
       )}
 
@@ -352,7 +381,7 @@ export function AdminPage() {
             title="Blackout dates"
             description="Block new bookings for property-wide or room-type windows."
           />
-          <BlackoutDateManager token={user!.token} hotelId={user!.hotelId ?? 1} />
+          <BlackoutDateManager token={user!.token} hotelId={hotelId!} />
         </div>
       )}
 

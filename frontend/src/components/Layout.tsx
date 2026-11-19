@@ -78,6 +78,12 @@ export function Layout() {
             <Link to="/login" className="mt-2 font-medium text-forest underline-offset-4 hover:underline">
               Staff operations →
             </Link>
+            <Link
+              to="/register-property"
+              className="font-medium text-forest/80 underline-offset-4 hover:underline"
+            >
+              List your property
+            </Link>
           </div>
         </div>
       </footer>

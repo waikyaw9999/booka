@@ -1,13 +1,12 @@
 package com.booka.config;
 
-import com.booka.domain.entity.ChannelApiKey;
-import com.booka.repository.ChannelApiKeyRepository;
+import com.booka.repository.HotelRepository;
+import com.booka.service.ChannelApiKeyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -16,8 +15,8 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class ChannelApiKeyInitializer implements ApplicationRunner {
 
-    private final ChannelApiKeyRepository channelApiKeyRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final HotelRepository hotelRepository;
+    private final ChannelApiKeyService channelApiKeyService;
 
     @Value("${booka.channel.api-key:}")
     private String channelApiKey;
@@ -27,21 +26,8 @@ public class ChannelApiKeyInitializer implements ApplicationRunner {
         if (!StringUtils.hasText(channelApiKey)) {
             return;
         }
-        boolean exists = channelApiKeyRepository.findByChannelAndActiveTrue("OTA").stream()
-                .anyMatch(k -> passwordEncoder.matches(channelApiKey, k.getKeyHash()));
-        if (exists) {
-            return;
-        }
-        channelApiKeyRepository.save(ChannelApiKey.builder()
-                .channel("OTA")
-                .keyHash(passwordEncoder.encode(channelApiKey))
-                .active(true)
-                .build());
-        channelApiKeyRepository.save(ChannelApiKey.builder()
-                .channel("CHANNEL_MANAGER")
-                .keyHash(passwordEncoder.encode(channelApiKey))
-                .active(true)
-                .build());
-        log.info("Seeded channel API keys for OTA and CHANNEL_MANAGER from CHANNEL_API_KEY");
+        hotelRepository.findAll().forEach(hotel ->
+                channelApiKeyService.ensurePropertyChannelKeys(hotel.getId(), channelApiKey));
+        log.info("Ensured per-hotel channel API keys for {} properties", hotelRepository.count());
     }
 }

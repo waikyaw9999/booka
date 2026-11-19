@@ -22,6 +22,10 @@ public class ChannelApiKey {
     @Column(nullable = false, length = 64)
     private String channel;
 
+    /** Property this key may write reservations for. Null = legacy/global (deactivated). */
+    @Column(name = "hotel_id")
+    private Long hotelId;
+
     @Column(name = "key_hash", nullable = false)
     private String keyHash;
 

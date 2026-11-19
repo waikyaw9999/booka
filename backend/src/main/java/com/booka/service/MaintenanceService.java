@@ -56,9 +56,10 @@ public class MaintenanceService {
     }
 
     @Transactional
-    public MaintenanceTicketResponse update(Long id, UpdateMaintenanceTicketRequest request) {
+    public MaintenanceTicketResponse update(Long id, UpdateMaintenanceTicketRequest request, Long staffHotelId) {
         MaintenanceTicket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + id));
+        hotelService.assertHotelAccess(ticket.getHotelId(), staffHotelId);
         if (request.status() != null) {
             ticket.setStatus(request.status());
             if (request.status() == TicketStatus.RESOLVED || request.status() == TicketStatus.CANCELLED) {

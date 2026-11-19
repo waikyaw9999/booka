@@ -1,5 +1,7 @@
 package com.booka.domain.entity;
 
+import com.booka.domain.enums.SubscriptionPlan;
+import com.booka.domain.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -45,6 +47,22 @@ public class Hotel {
     /** Hotel business date. Null until the first night audit; then the date the desk is working. */
     @Column(name = "business_date")
     private LocalDate businessDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subscription_plan", nullable = false, length = 32)
+    @Builder.Default
+    private SubscriptionPlan subscriptionPlan = SubscriptionPlan.TRIAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subscription_status", nullable = false, length = 32)
+    @Builder.Default
+    private SubscriptionStatus subscriptionStatus = SubscriptionStatus.TRIALING;
+
+    @Column(name = "trial_ends_at")
+    private Instant trialEndsAt;
+
+    @Column(name = "subscription_renews_at")
+    private Instant subscriptionRenewsAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

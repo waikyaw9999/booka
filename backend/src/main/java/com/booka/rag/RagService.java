@@ -81,7 +81,10 @@ public class RagService {
         if (!rateLimiter.tryAcquire("staff:" + user.getId(), ragProperties.getStaffRateLimitPerMinute())) {
             throw new BusinessException("Rate limit exceeded. Please try again later.");
         }
-        Long hotelId = user.getHotelId() != null ? user.getHotelId() : request.hotelId();
+        if (user.getHotelId() == null) {
+            throw new BusinessException("Your account is not assigned to a property");
+        }
+        Long hotelId = user.getHotelId();
         var req = new RagChatRequest(request.message(), hotelId, request.history());
 
         StaffPropertyIntentDetector.ParsedStaffQuery staffIntent =
@@ -192,11 +195,15 @@ public class RagService {
     }
 
     @Transactional
-    public RagDocumentResponse ingestDocument(IngestDocumentRequest request) {
+    public RagDocumentResponse ingestDocument(IngestDocumentRequest request, BookaUserDetails user) {
+        if (user.getHotelId() == null) {
+            throw new BusinessException("Your account is not assigned to a property");
+        }
+        Long hotelId = user.getHotelId();
         RagDocument document = RagDocument.builder()
                 .title(request.title())
                 .audience(request.audience())
-                .hotelId(request.hotelId())
+                .hotelId(hotelId)
                 .sourceType(request.sourceType())
                 .build();
         document = ragDocumentRepository.save(document);
@@ -209,7 +216,7 @@ public class RagService {
                     .content(chunkContent)
                     .section(null)
                     .audience(request.audience())
-                    .hotelId(request.hotelId())
+                    .hotelId(hotelId)
                     .embedding(embeddingService.serialize(embedding))
                     .build();
             ragChunkRepository.save(chunk);
@@ -221,6 +228,9 @@ public class RagService {
     }
 
     public List<RagDocumentResponse> listDocuments(RagAudience audience, Long hotelId) {
+        if (hotelId == null) {
+            throw new BusinessException("Your account is not assigned to a property");
+        }
         return ragDocumentRepository.findByAudienceAndHotelId(audience, hotelId).stream()
                 .map(d -> new RagDocumentResponse(d.getId(), d.getTitle(), d.getAudience(), d.getHotelId(), d.getSourceType()))
                 .toList();

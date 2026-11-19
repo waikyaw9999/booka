@@ -1,0 +1,88 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-property-tenancy-ops-schema
+      author: booka
+      changes:
+        - addColumn:
+            tableName: hotels
+            columns:
+              - column:
+                  name: subscription_plan
+                  type: VARCHAR(32)
+                  defaultValue: TRIAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subscription_status
+                  type: VARCHAR(32)
+                  defaultValue: TRIALING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: trial_ends_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: subscription_renews_at
+                  type: TIMESTAMP WITH TIME ZONE
+
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+        - addColumn:
+            tableName: channel_api_keys
+            columns:
+              - column:
+                  name: hotel_id
+                  type: BIGINT
+
+        - addForeignKeyConstraint:
+            baseTableName: channel_api_keys
+            baseColumnNames: hotel_id
+            referencedTableName: hotels
+            referencedColumnNames: id
+            constraintName: fk_channel_api_keys_hotel
+
+        - createIndex:
+            tableName: channel_api_keys
+            indexName: idx_channel_api_keys_hotel_channel
+            columns:
+              - column:
+                  name: hotel_id
+              - column:
+                  name: channel
+
+        - sql:
+            sql: UPDATE channel_api_keys SET active = FALSE WHERE hotel_id IS NULL
+
+  - changeSet:
+      id: 009-demo-hotels-subscription-postgres
+      author: booka
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: >
+              UPDATE hotels
+              SET subscription_plan = 'STARTER',
+                  subscription_status = 'ACTIVE',
+                  trial_ends_at = CURRENT_TIMESTAMP + INTERVAL '30 days',
+                  subscription_renews_at = CURRENT_TIMESTAMP + INTERVAL '30 days'
+
+  - changeSet:
+      id: 009-demo-hotels-subscription-h2
+      author: booka
+      dbms: h2
+      changes:
+        - sql:
+            sql: >
+              UPDATE hotels
+              SET subscription_plan = 'STARTER',
+                  subscription_status = 'ACTIVE',
+                  trial_ends_at = DATEADD('DAY', 30, CURRENT_TIMESTAMP),
+                  subscription_renews_at = DATEADD('DAY', 30, CURRENT_TIMESTAMP)

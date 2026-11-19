@@ -67,9 +67,12 @@ public class BlackoutDateService {
 
     @Transactional
     public void delete(Long id, Long hotelId) {
+        if (hotelId == null) {
+            throw new BusinessException("Your account is not assigned to a property");
+        }
         BlackoutDate blackout = blackoutDateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Blackout date not found: " + id));
-        if (hotelId != null && !blackout.getHotelId().equals(hotelId)) {
+        if (!blackout.getHotelId().equals(hotelId)) {
             throw new BusinessException("Blackout date does not belong to your hotel");
         }
         blackoutDateRepository.delete(blackout);

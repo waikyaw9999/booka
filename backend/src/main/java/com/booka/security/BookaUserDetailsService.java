@@ -24,7 +24,8 @@ public class BookaUserDetailsService implements UserDetailsService {
                 user.getFullName(),
                 user.getPasswordHash(),
                 user.getRole(),
-                user.getHotelId()
+                user.getHotelId(),
+                user.isActive()
         );
     }
 }

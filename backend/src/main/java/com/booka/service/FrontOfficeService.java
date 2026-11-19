@@ -47,9 +47,11 @@ public class FrontOfficeService {
     }
 
     @Transactional
-    public RoomBoardItem updateHousekeeping(Long roomId, UpdateHousekeepingRequest request) {
+    public RoomBoardItem updateHousekeeping(Long roomId, UpdateHousekeepingRequest request, Long staffHotelId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found: " + roomId));
+        RoomType roomType = hotelService.findRoomType(room.getRoomTypeId());
+        hotelService.assertHotelAccess(roomType.getHotelId(), staffHotelId);
         HousekeepingStatus next = request.housekeepingStatus();
         boolean force = Boolean.TRUE.equals(request.force());
         if (next == HousekeepingStatus.CLEAN

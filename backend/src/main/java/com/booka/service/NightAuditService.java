@@ -71,7 +71,7 @@ public class NightAuditService {
         }
         boolean retain = request.retainNoShowNight() == null || request.retainNoShowNight();
         for (Booking booking : before.noShowBookings()) {
-            bookingService.markNoShow(booking.getId(), retain);
+            bookingService.markNoShow(booking.getId(), retain, hotelId);
         }
         Snapshot after = propertyFlashService.compute(hotelId);
         String note = request.note() == null ? null : request.note().trim();

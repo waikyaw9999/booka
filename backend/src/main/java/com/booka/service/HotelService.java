@@ -2,6 +2,8 @@ package com.booka.service;
 
 import com.booka.domain.entity.*;
 import com.booka.domain.enums.RoomStatus;
+import com.booka.domain.enums.SubscriptionPlan;
+import com.booka.domain.enums.SubscriptionStatus;
 import com.booka.dto.HotelDtos.*;
 import com.booka.dto.ImageDtos;
 import com.booka.exception.BusinessException;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -62,6 +65,7 @@ public class HotelService {
 
     @Transactional
     public HotelResponse createHotel(CreateHotelRequest request) {
+        Instant trialEnd = Instant.now().plus(30, ChronoUnit.DAYS);
         Hotel hotel = Hotel.builder()
                 .name(request.name())
                 .description(request.description())
@@ -70,6 +74,9 @@ public class HotelService {
                 .country(request.country())
                 .amenities(request.amenities())
                 .cancellationPolicy(request.cancellationPolicy())
+                .subscriptionPlan(SubscriptionPlan.TRIAL)
+                .subscriptionStatus(SubscriptionStatus.TRIALING)
+                .trialEndsAt(trialEnd)
                 .build();
         return toHotelResponse(hotelRepository.save(hotel));
     }
@@ -93,10 +100,13 @@ public class HotelService {
     }
 
     @Transactional
-    public RoomTypeResponse createRoomType(CreateRoomTypeRequest request) {
-        findHotel(request.hotelId());
+    public RoomTypeResponse createRoomType(CreateRoomTypeRequest request, Long staffHotelId) {
+        Long hotelId = requireStaffHotelId(staffHotelId);
+        assertHotelAccess(request.hotelId() != null ? request.hotelId() : hotelId, hotelId);
+        // Always bind new room types to the staff member's property.
+        findHotel(hotelId);
         RoomType roomType = RoomType.builder()
-                .hotelId(request.hotelId())
+                .hotelId(hotelId)
                 .name(request.name().trim())
                 .description(request.description())
                 .maxOccupancy(request.maxOccupancy())
@@ -166,8 +176,20 @@ public class HotelService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room type not found: " + id));
     }
 
+    /**
+     * Property-scoped staff must have a hotel assignment. Booka sells one property account
+     * per manager/team login — no cross-hotel ops for STAFF/ADMIN.
+     */
+    public Long requireStaffHotelId(Long staffHotelId) {
+        if (staffHotelId == null) {
+            throw new BusinessException("Your account is not assigned to a property");
+        }
+        return staffHotelId;
+    }
+
     void assertHotelAccess(Long hotelId, Long staffHotelId) {
-        if (staffHotelId != null && !staffHotelId.equals(hotelId)) {
+        Long scoped = requireStaffHotelId(staffHotelId);
+        if (!scoped.equals(hotelId)) {
             throw new BusinessException("Resource does not belong to your hotel");
         }
     }
@@ -210,7 +232,11 @@ public class HotelService {
                 h.getAmenities(),
                 h.getCancellationPolicy(),
                 images,
-                primaryUrl);
+                primaryUrl,
+                h.getSubscriptionPlan() == null ? null : h.getSubscriptionPlan().name(),
+                h.getSubscriptionStatus() == null ? null : h.getSubscriptionStatus().name(),
+                h.getTrialEndsAt(),
+                h.getSubscriptionRenewsAt());
     }
 
     private RoomTypeResponse toRoomTypeResponse(RoomType rt) {

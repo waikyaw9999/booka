@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/changelog/changes/007-commercial-operations.yaml
   - include:
       file: db/changelog/changes/008-property-logins.yaml
+  - include:
+      file: db/changelog/changes/009-property-tenancy-ops.yaml

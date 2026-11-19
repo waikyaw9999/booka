@@ -8,6 +8,8 @@ const NAV = [
   { id: 'dashboard', label: 'Dashboard', path: '/admin' },
   { id: 'front-office', label: 'Front Office', path: '/admin?tab=front-office' },
   { id: 'inventory', label: 'Inventory', path: '/admin?tab=inventory' },
+  { id: 'team', label: 'Team', path: '/admin?tab=team' },
+  { id: 'billing', label: 'Billing', path: '/admin?tab=billing' },
   { id: 'reservations', label: 'Reservations', path: '/admin?tab=reservations' },
   { id: 'guests', label: 'Guests', path: '/admin?tab=guests' },
   { id: 'requests', label: 'Requests', path: '/admin?tab=requests' },
@@ -26,19 +28,41 @@ export function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const hotelId = user?.hotelId ?? null;
+  const { data: hotel } = useQuery({
+    queryKey: ['hotel', hotelId],
+    queryFn: () => api.getHotel(hotelId!),
+    enabled: hotelId != null,
+  });
+
   if (!user || !isStaff()) {
     return <Navigate to="/login" replace />;
   }
 
-  const { data: hotel } = useQuery({
-    queryKey: ['hotel', user.hotelId],
-    queryFn: () => api.getHotel(user.hotelId!),
-    enabled: user.hotelId != null,
-  });
+  if (user.hotelId == null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-fog px-4">
+        <div className="surface-elevated max-w-md space-y-3 p-6 text-center">
+          <p className="font-display text-xl font-semibold text-ink">Property not assigned</p>
+          <p className="text-sm text-ink/60">
+            This staff account is not linked to a hotel. Sign in with a property login or create one
+            via List your property.
+          </p>
+          <Link to="/login" className="btn-primary inline-flex" onClick={() => logout()}>
+            Back to sign-in
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const params = new URLSearchParams(location.search);
   const activeTab = params.get('tab') ?? 'dashboard';
-  const propertyLabel = hotel?.name ?? (user.hotelId ? `Property #${user.hotelId}` : 'All properties');
+  const propertyLabel = hotel?.name ?? `Property #${user.hotelId}`;
+  const navItems =
+    user.role === 'ADMIN'
+      ? NAV
+      : NAV.filter((item) => item.id !== 'team' && item.id !== 'billing');
 
   function handleLogout() {
     clearStaffMessages();
@@ -59,7 +83,7 @@ export function AdminLayout() {
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-        {NAV.map((item) => {
+        {navItems.map((item) => {
           const active =
             item.id === 'dashboard' ? activeTab === 'dashboard' : activeTab === item.id;
           return (

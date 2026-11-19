@@ -19,7 +19,6 @@ public class ChannelController {
             @PathVariable String channel,
             @RequestHeader(value = "X-Channel-Api-Key", required = false) String apiKey,
             @Valid @RequestBody ChannelReservationRequest request) {
-        channelReservationService.assertValidApiKey(channel, apiKey);
-        return channelReservationService.upsert(channel, request);
+        return channelReservationService.upsert(channel, apiKey, request);
     }
 }

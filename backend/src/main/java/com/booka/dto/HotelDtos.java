@@ -21,7 +21,21 @@ public final class HotelDtos {
             String amenities,
             String cancellationPolicy,
             java.util.List<ImageDtos.ImageResponse> images,
-            String primaryImageUrl
+            String primaryImageUrl,
+            String subscriptionPlan,
+            String subscriptionStatus,
+            java.time.Instant trialEndsAt,
+            java.time.Instant subscriptionRenewsAt
+    ) {}
+
+    public record HotelBillingResponse(
+            Long hotelId,
+            String hotelName,
+            String subscriptionPlan,
+            String subscriptionStatus,
+            java.time.Instant trialEndsAt,
+            java.time.Instant subscriptionRenewsAt,
+            String billingNote
     ) {}
 
     public record RoomTypeResponse(

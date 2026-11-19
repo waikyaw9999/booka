@@ -85,12 +85,9 @@ public class CommercialController {
             @AuthenticationPrincipal BookaUserDetails user,
             @PathVariable Long id,
             @RequestBody(required = false) NoShowBody request) {
-        var booking = bookingService.findBooking(id);
-        if (user.getHotelId() != null && !user.getHotelId().equals(booking.getHotelId())) {
-            throw new BusinessException("Booking belongs to another property");
-        }
+        Long hotelId = hotelId(user);
         boolean retain = request == null || request.retainOneNight() == null || request.retainOneNight();
-        return bookingService.markNoShow(id, retain);
+        return bookingService.markNoShow(id, retain, hotelId);
     }
 
     @PostMapping("/folios/{bookingId}/payments")
@@ -98,18 +95,18 @@ public class CommercialController {
             @AuthenticationPrincipal BookaUserDetails user,
             @PathVariable Long bookingId,
             @Valid @RequestBody PostPaymentRequest request) {
-        var booking = bookingService.findBooking(bookingId);
-        if (user.getHotelId() != null && !user.getHotelId().equals(booking.getHotelId())) {
-            throw new BusinessException("Booking belongs to another property");
-        }
+        Long hotelId = hotelId(user);
         FolioResponse folio = folioService.postDeskPayment(
-                bookingId, request.amount(), request.method(), request.reference());
+                bookingId, request.amount(), request.method(), request.reference(), hotelId);
         bookingService.syncPaymentStatus(bookingId);
         return folio;
     }
 
     private Long hotelId(BookaUserDetails user) {
-        return user.getHotelId() != null ? user.getHotelId() : 1L;
+        if (user.getHotelId() == null) {
+            throw new BusinessException("Your account is not assigned to a property");
+        }
+        return user.getHotelId();
     }
 
     public record NoShowBody(Boolean retainOneNight) {}
