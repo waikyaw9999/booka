@@ -80,6 +80,23 @@ public final class HotelDtos {
             long nights
     ) {}
 
+    public record HotelSearchBody(
+            String city,
+            @NotNull java.time.LocalDate checkInDate,
+            @NotNull java.time.LocalDate checkOutDate,
+            @NotNull @Min(1) Integer numGuests
+    ) {}
+
+    /** Marketplace search hit: property with availability for the stay. */
+    public record HotelSearchResult(
+            HotelResponse hotel,
+            BigDecimal fromNightlyRate,
+            BigDecimal fromStaySubtotal,
+            long nights,
+            int availableRoomTypeCount,
+            int totalAvailableRooms
+    ) {}
+
     public record CreateHotelRequest(
             @NotBlank String name,
             String description,

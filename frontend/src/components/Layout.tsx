@@ -26,8 +26,11 @@ export function Layout() {
             </span>
           </Link>
           <nav className="flex items-center gap-4 text-sm font-medium text-ink/75 sm:gap-6">
-            <Link to="/#stays" className="transition hover:text-forest">
-              Stays
+            <Link to="/search" className="transition hover:text-forest">
+              Search
+            </Link>
+            <Link to="/#stays" className="hidden transition hover:text-forest sm:inline">
+              Browse
             </Link>
             {isStaff() && (
               <Link to="/admin" className="transition hover:text-forest">

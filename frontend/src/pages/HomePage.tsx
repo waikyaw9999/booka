@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { HotelCard } from '../components/HotelCard';
+import { StaySearchBar } from '../components/StaySearchBar';
 import { PublicRagWidget } from '../components/PublicRagWidget';
 import { EmptyState, InlineAlert } from '../components/ui';
 
@@ -26,25 +28,20 @@ export function HomePage() {
 
         <div className="relative mx-auto flex min-h-[78vh] max-w-6xl flex-col justify-end px-4 pb-14 pt-16 sm:min-h-[84vh] sm:pb-20">
           <p className="animate-rise text-[11px] font-semibold uppercase tracking-[0.2em] text-moss">
-            Sunny stays · Myanmar
+            Step 1 · Search
           </p>
           <p className="animate-rise mt-3 font-display text-5xl font-bold tracking-tight text-forest sm:text-7xl md:text-8xl">
             Booka
           </p>
           <h1 className="animate-rise-delay mt-4 max-w-xl font-display text-2xl font-semibold leading-snug text-ink sm:text-3xl md:text-[2.15rem]">
-            Stays that feel settled the moment you arrive.
+            Find stays by dates, then pick a room.
           </h1>
           <p className="animate-rise-delay-2 mt-4 max-w-lg text-base leading-relaxed text-ink/70 sm:text-lg">
-            Browse calm properties across Myanmar, check live availability, and confirm without the
-            noise — pay at the property on arrival.
+            Search available properties, compare rooms, and confirm — pay at the property on
+            arrival.
           </p>
-          <div className="animate-rise-delay-2 mt-9 flex flex-wrap gap-3">
-            <a href="#stays" className="btn-primary">
-              Explore stays
-            </a>
-            <a href="#concierge" className="btn-secondary">
-              Ask concierge
-            </a>
+          <div className="animate-rise-delay-2 mt-8 max-w-4xl">
+            <StaySearchBar />
           </div>
         </div>
       </section>
@@ -53,19 +50,19 @@ export function HomePage() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-moss">
-              Property discovery
+              Browse without dates
             </p>
             <h2 className="mt-2 font-display text-3xl font-bold text-ink sm:text-4xl">
-              Featured stays
+              Featured properties
             </h2>
             <p className="mt-3 text-ink/65">
-              Handpicked properties with transparent rates, live inventory, and clear cancellation
-              policies.
+              Prefer dates first? Use search above. Or open a property and set dates on the rooms
+              step.
             </p>
           </div>
-          <p className="max-w-xs text-sm leading-relaxed text-ink/50 sm:text-right">
-            Live inventory · Confirm now, pay at property · Concierge help
-          </p>
+          <Link to="/search" className="btn-secondary shrink-0 self-start sm:self-auto">
+            Search by dates
+          </Link>
         </div>
 
         {isLoading && (

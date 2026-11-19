@@ -27,6 +27,7 @@ import type {
   PropertyImage,
   StaffMember,
   HotelBilling,
+  HotelSearchResult,
 } from '../types';
 import { normalizeHttpError, normalizeNetworkError } from './errors';
 
@@ -135,6 +136,17 @@ export const api = {
 
   getHotel: (id: number) => request<Hotel>(`/api/v1/hotels/${id}`),
 
+  searchHotels: (body: {
+    city?: string;
+    checkInDate: string;
+    checkOutDate: string;
+    numGuests: number;
+  }) =>
+    request<HotelSearchResult[]>('/api/v1/hotels/search', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   checkAvailability: (
     hotelId: number,
     body: { checkInDate: string; checkOutDate: string; numGuests: number },
@@ -143,6 +155,9 @@ export const api = {
       `/api/v1/hotels/${hotelId}/availability`,
       { method: 'POST', body: JSON.stringify(body) },
     ),
+
+  getRoomType: (hotelId: number, roomTypeId: number) =>
+    request<RoomType>(`/api/v1/hotels/${hotelId}/room-types/${roomTypeId}`),
 
   createBooking: (body: {
     hotelId: number;

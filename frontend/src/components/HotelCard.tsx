@@ -31,7 +31,7 @@ export function HotelCard({ hotel, index = 0 }: { hotel: Hotel; index?: number }
       <div className="space-y-3 p-5">
         <p className="line-clamp-2 text-sm leading-relaxed text-ink/70">{hotel.description}</p>
         <span className="inline-flex text-xs font-semibold text-moss transition group-hover:text-forest">
-          View stay →
+          View rooms →
         </span>
       </div>
     </Link>

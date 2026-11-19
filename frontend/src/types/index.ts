@@ -73,6 +73,22 @@ export interface AvailableRoomType {
   nights: number;
 }
 
+export interface HotelSearchResult {
+  hotel: Hotel;
+  fromNightlyRate: number;
+  fromStaySubtotal: number;
+  nights: number;
+  availableRoomTypeCount: number;
+  totalAvailableRooms: number;
+}
+
+export interface StaySearchParams {
+  city: string;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+}
+
 export interface Booking {
   id: number;
   confirmationCode: string;

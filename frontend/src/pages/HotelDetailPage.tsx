@@ -1,44 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../lib/api';
+import { money } from '../lib/format';
 import { hotelDisplayImage, resolveMediaUrl } from '../lib/media';
-import { useBookingStore } from '../stores';
-import { PublicRagWidget } from '../components/PublicRagWidget';
+import {
+  buildStaySearchParams,
+  parseStaySearch,
+  roomDetailPath,
+  searchResultsPath,
+} from '../lib/search';
+import { StaySearchBar } from '../components/StaySearchBar';
 import { BlackoutNotice } from '../components/BlackoutNotice';
 import { EmptyState, InlineAlert } from '../components/ui';
+import { PublicRagWidget } from '../components/PublicRagWidget';
 
 export function HotelDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const hotelId = Number(id);
-  const { draft, setDraft } = useBookingStore();
-  const paramCheckIn = searchParams.get('checkIn');
-  const paramCheckOut = searchParams.get('checkOut');
-  const paramGuests = searchParams.get('guests');
-  const paramRoomTypeId = searchParams.get('roomTypeId');
-  const highlightRoomTypeId = paramRoomTypeId ? Number(paramRoomTypeId) : null;
-
-  const [checkIn, setCheckIn] = useState(
-    paramCheckIn || draft.checkInDate,
-  );
-  const [checkOut, setCheckOut] = useState(
-    paramCheckOut || draft.checkOutDate,
-  );
-  const [numGuests, setNumGuests] = useState(
-    Number(paramGuests) || draft.numGuests || 2,
-  );
-  const [searching, setSearching] = useState(false);
-  const [availability, setAvailability] = useState<Awaited<ReturnType<typeof api.checkAvailability>> | null>(null);
-  const [searchError, setSearchError] = useState('');
-  const availabilityRef = useRef<HTMLElement | null>(null);
-  const lastAutoSearchKey = useRef<string>('');
-
-  const today = new Date().toISOString().slice(0, 10);
-  const checkoutMin = checkIn
-    ? new Date(new Date(checkIn).getTime() + 86400000).toISOString().slice(0, 10)
-    : today;
+  const stay = parseStaySearch(searchParams);
+  const hasStay = !!stay.checkIn && !!stay.checkOut && stay.checkOut > stay.checkIn;
 
   const {
     data: hotel,
@@ -57,104 +38,34 @@ export function HotelDetailPage() {
     enabled: !Number.isNaN(hotelId),
   });
 
-  // Keep form fields in sync when RAG "View & book" updates query params on this page.
-  useEffect(() => {
-    if (paramCheckIn) setCheckIn(paramCheckIn);
-    if (paramCheckOut) setCheckOut(paramCheckOut);
-    if (paramGuests) {
-      const n = Number(paramGuests);
-      if (!Number.isNaN(n) && n > 0) setNumGuests(n);
-    }
-  }, [paramCheckIn, paramCheckOut, paramGuests]);
-
-  async function runAvailabilitySearch(
-    nextCheckIn: string,
-    nextCheckOut: string,
-    nextGuests: number,
-    hotelName: string | null,
-  ) {
-    if (!nextCheckIn || !nextCheckOut || Number.isNaN(hotelId)) return;
-    setSearchError('');
-    setSearching(true);
-    try {
-      const result = await api.checkAvailability(hotelId, {
-        checkInDate: nextCheckIn,
-        checkOutDate: nextCheckOut,
-        numGuests: nextGuests,
-      });
-      setAvailability(result);
-      setDraft({
-        hotelId,
-        hotelName,
-        checkInDate: nextCheckIn,
-        checkOutDate: nextCheckOut,
-        numGuests: nextGuests,
-      });
-    } catch (err) {
-      setSearchError(getErrorMessage(err, 'Search failed. Please try again.'));
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  // Auto-run availability when deep-linked from the RAG widget.
-  useEffect(() => {
-    const inDate = paramCheckIn || checkIn;
-    const outDate = paramCheckOut || checkOut;
-    const guests = paramGuests ? Number(paramGuests) : numGuests;
-    if (!paramCheckIn || !paramCheckOut || !hotel || Number.isNaN(hotelId)) return;
-    if (!inDate || !outDate || Number.isNaN(guests) || guests < 1) return;
-
-    const key = `${hotelId}|${inDate}|${outDate}|${guests}`;
-    if (lastAutoSearchKey.current === key) return;
-    lastAutoSearchKey.current = key;
-
-    void runAvailabilitySearch(inDate, outDate, guests, hotel.name);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only when URL deep-link params / hotel load
-  }, [paramCheckIn, paramCheckOut, paramGuests, hotel, hotelId]);
-
-  useEffect(() => {
-    if (location.hash !== '#availability') return;
-    const el = availabilityRef.current ?? document.getElementById('availability');
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [location.hash, location.search, availability]);
-
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    await runAvailabilitySearch(checkIn, checkOut, numGuests, hotel?.name ?? null);
-  }
-
-  function selectRoom(room: NonNullable<typeof availability>[0]) {
-    setDraft({ selectedRoomType: room });
-  }
+  const {
+    data: availability,
+    isLoading: availLoading,
+    isError: availError,
+    error: availErr,
+  } = useQuery({
+    queryKey: ['availability', hotelId, stay.checkIn, stay.checkOut, stay.guests],
+    queryFn: () =>
+      api.checkAvailability(hotelId, {
+        checkInDate: stay.checkIn,
+        checkOutDate: stay.checkOut,
+        numGuests: stay.guests,
+      }),
+    enabled: !Number.isNaN(hotelId) && hasStay,
+  });
 
   if (isLoading) {
-    return <p className="py-24 text-center text-ink/50">Loading stay…</p>;
+    return <p className="py-24 text-center text-ink/50">Loading property…</p>;
   }
-  if (hotelLoadError) {
+  if (hotelLoadError || !hotel) {
     return (
       <div className="mx-auto max-w-lg px-4 py-24">
         <EmptyState
-          title="Couldn’t load this stay"
-          description={getErrorMessage(hotelError, 'Please refresh and try again.')}
+          title="Property not found"
+          description={getErrorMessage(hotelError, 'This stay may have been removed.')}
           action={
-            <Link to="/" className="btn-primary inline-flex">
-              Back to stays
-            </Link>
-          }
-        />
-      </div>
-    );
-  }
-  if (!hotel) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-24">
-        <EmptyState
-          title="Stay not found"
-          description="This property may have been removed or the link is incorrect."
-          action={
-            <Link to="/" className="btn-primary inline-flex">
-              Browse stays
+            <Link to={searchResultsPath(stay)} className="btn-primary inline-flex">
+              Back to search
             </Link>
           }
         />
@@ -169,29 +80,40 @@ export function HotelDetailPage() {
 
   return (
     <div>
-      <section className="relative h-[42vh] min-h-[280px] overflow-hidden">
+      <section className="relative h-[36vh] min-h-[240px] overflow-hidden">
         <img
           src={heroImage}
           alt={hotel.name}
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/20" />
-        <div className="relative mx-auto flex h-full max-w-4xl flex-col justify-end px-4 pb-10">
-          <Link to="/" className="mb-4 text-sm text-white/75 hover:text-white">
-            ← All stays
+        <div className="relative mx-auto flex h-full max-w-5xl flex-col justify-end px-4 pb-8">
+          <Link
+            to={searchResultsPath(stay)}
+            className="mb-3 text-sm text-white/75 hover:text-white"
+          >
+            ← Available properties
           </Link>
-          <h1 className="animate-rise font-display text-4xl font-bold text-white sm:text-5xl">
-            {hotel.name}
-          </h1>
-          <p className="animate-rise-delay mt-2 text-white/75">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
+            Step 3 · Rooms
+          </p>
+          <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">{hotel.name}</h1>
+          <p className="mt-1 text-white/75">
             {hotel.city}, {hotel.country}
           </p>
         </div>
       </section>
 
-      <div className="mx-auto max-w-4xl space-y-10 px-4 py-10">
+      <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:py-10">
+        <StaySearchBar
+          key={`${stay.city}-${stay.checkIn}-${stay.checkOut}-${stay.guests}`}
+          initial={stay}
+          compact
+          onSubmit={(next) => setSearchParams(buildStaySearchParams(next))}
+        />
+
         {gallery.length > 1 && (
-          <section className="animate-rise grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+          <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
             {gallery.map((img) => (
               <figure key={img.id} className="overflow-hidden rounded-xl">
                 <img
@@ -205,110 +127,68 @@ export function HotelDetailPage() {
           </section>
         )}
 
-        <section className="animate-rise space-y-3">
-          <p className="max-w-2xl text-lg leading-relaxed text-ink/75">{hotel.description}</p>
+        <section className="space-y-2">
+          <p className="max-w-2xl leading-relaxed text-ink/75">{hotel.description}</p>
           <p className="text-sm text-ink/55">{hotel.address}</p>
-          <div className="flex flex-wrap gap-2 pt-2">
-            {(hotel.amenities ?? '').split(',').filter(Boolean).map((item) => (
-              <span
-                key={item}
-                className="rounded-lg bg-sand/70 px-3 py-1 text-xs font-medium text-forest"
-              >
-                {item.trim()}
-              </span>
-            ))}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {(hotel.amenities ?? '')
+              .split(',')
+              .filter(Boolean)
+              .map((item) => (
+                <span
+                  key={item}
+                  className="rounded-lg bg-sand/70 px-3 py-1 text-xs font-medium text-forest"
+                >
+                  {item.trim()}
+                </span>
+              ))}
           </div>
-          <p className="pt-2 text-sm text-ink/60">
-            <span className="font-semibold text-ink">Cancellation:</span> {hotel.cancellationPolicy}
-          </p>
         </section>
 
         {blackouts && <BlackoutNotice blackouts={blackouts} />}
 
-        <section id="availability" ref={availabilityRef}>
-          <h2 className="font-display text-2xl font-bold text-ink">Check availability</h2>
-          <form
-            onSubmit={handleSearch}
-            className="surface mt-4 grid items-end gap-4 p-5 md:grid-cols-4"
-          >
-            <div>
-              <label className="label-caps">Check-in</label>
-              <input
-                type="date"
-                required
-                min={today}
-                value={checkIn}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setCheckIn(next);
-                  if (checkOut && checkOut <= next) {
-                    const dayAfter = new Date(new Date(next).getTime() + 86400000)
-                      .toISOString()
-                      .slice(0, 10);
-                    setCheckOut(dayAfter);
-                  }
-                }}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="label-caps">Check-out</label>
-              <input
-                type="date"
-                required
-                min={checkoutMin}
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="label-caps">Guests</label>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={numGuests}
-                onChange={(e) => setNumGuests(Number(e.target.value))}
-                className="input-field"
-              />
-            </div>
-            <button type="submit" disabled={searching} className="btn-primary w-full">
-              {searching ? 'Searching…' : 'Check dates'}
-            </button>
-          </form>
-          {searchError && (
-            <div className="mt-3">
-              <InlineAlert tone="error">{searchError}</InlineAlert>
-            </div>
-          )}
-        </section>
-
-        {availability && (
-          <section className="space-y-4 animate-tab">
-            <div className="flex items-end justify-between gap-4">
-              <h2 className="font-display text-2xl font-bold text-ink">Select a rate</h2>
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="font-display text-2xl font-bold text-ink">Available rooms</h2>
+            {hasStay && (
               <p className="text-xs text-ink/45">
-                {checkIn} → {checkOut} · {numGuests} guest{numGuests === 1 ? '' : 's'}
+                {stay.checkIn} → {stay.checkOut} · {stay.guests} guest
+                {stay.guests === 1 ? '' : 's'}
               </p>
-            </div>
-            {availability.length === 0 ? (
-              <EmptyState
-                title="No rooms for these dates"
-                description="Dates may overlap a blackout period or existing bookings. Try another range."
-              />
-            ) : (
-              <ul className="divide-y divide-sand/80 overflow-hidden rounded-2xl border border-sand/80 bg-white/70">
-                {availability.map((item) => {
-                  const roomImage = resolveMediaUrl(item.roomType.primaryImageUrl);
-                  const highlighted =
-                    highlightRoomTypeId != null && item.roomType.id === highlightRoomTypeId;
-                  return (
+            )}
+          </div>
+
+          {!hasStay && (
+            <InlineAlert tone="warning">
+              Choose check-in and check-out dates above to see rooms and prices.
+            </InlineAlert>
+          )}
+
+          {hasStay && availLoading && (
+            <p className="text-sm text-ink/50">Checking availability…</p>
+          )}
+
+          {hasStay && availError && (
+            <InlineAlert tone="error">
+              {getErrorMessage(availErr, 'Could not load rooms for these dates.')}
+            </InlineAlert>
+          )}
+
+          {hasStay && availability && availability.length === 0 && (
+            <EmptyState
+              title="No rooms for these dates"
+              description="Try different dates or another property."
+            />
+          )}
+
+          {hasStay && availability && availability.length > 0 && (
+            <ul className="divide-y divide-sand/80 overflow-hidden rounded-2xl border border-sand/80 bg-white/70">
+              {availability.map((item) => {
+                const roomImage = resolveMediaUrl(item.roomType.primaryImageUrl);
+                return (
                   <li
                     key={item.roomType.id}
-                    className={`flex flex-col gap-4 p-5 transition hover:bg-fog/50 md:flex-row md:items-center md:justify-between ${
-                      highlighted ? 'bg-moss/10 ring-2 ring-inset ring-moss/40' : ''
-                    }`}
+                    className="flex flex-col gap-4 p-5 transition hover:bg-fog/50 md:flex-row md:items-center md:justify-between"
                   >
                     <div className="flex min-w-0 flex-1 gap-4">
                       {roomImage && (
@@ -323,38 +203,38 @@ export function HotelDetailPage() {
                         <h3 className="font-display text-xl font-semibold text-ink">
                           {item.roomType.name}
                         </h3>
-                        <p className="mt-1 text-sm text-ink/65">{item.roomType.description}</p>
+                        <p className="mt-1 line-clamp-2 text-sm text-ink/65">
+                          {item.roomType.description}
+                        </p>
                         <p className="mt-2 text-xs font-medium uppercase tracking-wide text-moss">
-                          {item.availableCount} available · {item.nights} night
-                          {item.nights === 1 ? '' : 's'}
+                          {item.availableCount} left · {item.nights} night
+                          {item.nights === 1 ? '' : 's'} · sleeps {item.roomType.maxOccupancy}
                         </p>
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-5 md:flex-col md:items-end md:gap-2">
                       <div className="md:text-right">
-                        <p className="text-xs uppercase tracking-wide text-ink/45">Room subtotal</p>
+                        <p className="text-xs uppercase tracking-wide text-ink/45">From</p>
                         <p className="font-display text-2xl font-bold text-forest">
-                          ${item.totalPrice.toFixed(2)}
+                          {money(item.totalPrice)}
                         </p>
                         <p className="text-xs text-ink/50">
-                          ${item.nightlyRate.toFixed(2)} / night · tax at checkout
+                          {money(item.nightlyRate)} / night
                         </p>
                       </div>
                       <Link
-                        to="/book"
-                        onClick={() => selectRoom(item)}
+                        to={roomDetailPath(hotelId, item.roomType.id, stay)}
                         className="btn-primary inline-flex"
                       >
-                        Book
+                        View room
                       </Link>
                     </div>
                   </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        )}
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
         <section>
           <h2 className="mb-4 font-display text-2xl font-bold text-ink">Ask the concierge</h2>
