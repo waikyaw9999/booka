@@ -25,6 +25,12 @@ public class HotelController {
         return hotelService.listHotels();
     }
 
+    /** Marketplace search: properties available for dates (optional city). */
+    @PostMapping("/search")
+    List<HotelSearchResult> searchHotels(@Valid @RequestBody HotelSearchBody body) {
+        return hotelService.searchHotels(body);
+    }
+
     @GetMapping("/{id}")
     HotelResponse getHotel(@PathVariable Long id) {
         return hotelService.getHotel(id);
@@ -33,6 +39,11 @@ public class HotelController {
     @GetMapping("/{id}/room-types")
     List<RoomTypeResponse> getRoomTypes(@PathVariable Long id) {
         return hotelService.getRoomTypes(id);
+    }
+
+    @GetMapping("/{id}/room-types/{roomTypeId}")
+    RoomTypeResponse getRoomType(@PathVariable Long id, @PathVariable Long roomTypeId) {
+        return hotelService.getRoomTypeForHotel(id, roomTypeId);
     }
 
     @PostMapping("/{id}/availability")

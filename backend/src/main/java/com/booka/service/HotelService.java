@@ -43,6 +43,15 @@ public class HotelService {
         return roomTypeRepository.findByHotelId(hotelId).stream().map(this::toRoomTypeResponse).toList();
     }
 
+    public RoomTypeResponse getRoomTypeForHotel(Long hotelId, Long roomTypeId) {
+        findHotel(hotelId);
+        RoomType roomType = findRoomType(roomTypeId);
+        if (!hotelId.equals(roomType.getHotelId())) {
+            throw new ResourceNotFoundException("Room type not found for hotel");
+        }
+        return toRoomTypeResponse(roomType);
+    }
+
     public List<AvailableRoomTypeResponse> checkAvailability(AvailabilityRequest request) {
         findHotel(request.hotelId());
         validateDates(request.checkInDate(), request.checkOutDate());
@@ -60,6 +69,48 @@ public class HotelService {
                             toRoomTypeResponse(rt), count, total, rt.getBaseRate(), nights);
                 })
                 .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * Guest marketplace search (Agoda-style): properties with at least one sellable room type
+     * for the stay. Optional city filter (case-insensitive contains).
+     */
+    public List<HotelSearchResult> searchHotels(HotelSearchBody body) {
+        validateDates(body.checkInDate(), body.checkOutDate());
+        String cityFilter = body.city() == null ? "" : body.city().trim().toLowerCase();
+        long nights = ChronoUnit.DAYS.between(body.checkInDate(), body.checkOutDate());
+
+        return hotelRepository.findAll().stream()
+                .filter(h -> cityFilter.isEmpty()
+                        || (h.getCity() != null && h.getCity().toLowerCase().contains(cityFilter))
+                        || (h.getCountry() != null && h.getCountry().toLowerCase().contains(cityFilter))
+                        || (h.getName() != null && h.getName().toLowerCase().contains(cityFilter)))
+                .map(h -> {
+                    var available = checkAvailability(new AvailabilityRequest(
+                            h.getId(), body.checkInDate(), body.checkOutDate(), body.numGuests()));
+                    if (available.isEmpty()) {
+                        return null;
+                    }
+                    BigDecimal fromNightly = available.stream()
+                            .map(AvailableRoomTypeResponse::nightlyRate)
+                            .min(BigDecimal::compareTo)
+                            .orElse(BigDecimal.ZERO);
+                    BigDecimal fromStay = available.stream()
+                            .map(AvailableRoomTypeResponse::totalPrice)
+                            .min(BigDecimal::compareTo)
+                            .orElse(BigDecimal.ZERO);
+                    int rooms = available.stream().mapToInt(AvailableRoomTypeResponse::availableCount).sum();
+                    return new HotelSearchResult(
+                            toHotelResponse(h),
+                            fromNightly,
+                            fromStay,
+                            nights,
+                            available.size(),
+                            rooms);
+                })
+                .filter(java.util.Objects::nonNull)
+                .sorted(java.util.Comparator.comparing(HotelSearchResult::fromNightlyRate))
                 .toList();
     }
 

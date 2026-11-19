@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/Layout';
 import { AdminLayout } from './components/AdminLayout';
 import { HomePage } from './pages/HomePage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
 import { HotelDetailPage } from './pages/HotelDetailPage';
+import { RoomDetailPage } from './pages/RoomDetailPage';
 import { BookingPage } from './pages/BookingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPropertyPage } from './pages/RegisterPropertyPage';
@@ -18,7 +20,9 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/search" element={<SearchResultsPage />} />
             <Route path="/hotels/:id" element={<HotelDetailPage />} />
+            <Route path="/hotels/:id/rooms/:roomTypeId" element={<RoomDetailPage />} />
             <Route path="/book" element={<BookingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register-property" element={<RegisterPropertyPage />} />
