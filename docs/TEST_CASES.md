@@ -1,5 +1,7 @@
 # Booka — Team Feature Test Cases
 
+For a **step-by-step walkthrough** (ordered guest → desk → ops), use [`TESTING_GUIDE.md`](./TESTING_GUIDE.md). This file is the Pass/Fail checklist.
+
 Use this pack for launch / regression testing. Mark each case **Pass / Fail / Blocked** and note environment (local `localhost:5173` or prod `https://booka.juneko.online`).
 
 **Password for all demo staff accounts:** `password`
