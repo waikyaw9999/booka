@@ -187,7 +187,7 @@ public class HotelService {
         return staffHotelId;
     }
 
-    void assertHotelAccess(Long hotelId, Long staffHotelId) {
+    public void assertHotelAccess(Long hotelId, Long staffHotelId) {
         Long scoped = requireStaffHotelId(staffHotelId);
         if (!scoped.equals(hotelId)) {
             throw new BusinessException("Resource does not belong to your hotel");
