@@ -39,7 +39,9 @@ If image or inventory APIs return 500 after a schema change, rebuild the backend
 - `GROQ_API_KEY` in `.env` — richer concierge answers. Without it, FAQ/availability still run from documents + inventory tools; answers may be thinner.
 - Stripe keys are **not** required for guest booking (pay at property).
 
-### Demo accounts
+### Demo accounts (separate property tenancy)
+
+Each property has its **own** manager and front-desk login. Ops data is isolated by `hotelId` — Harbourview staff cannot open Booka Grand bookings/folios/rooms. See [`MULTI_PROPERTY.md`](./MULTI_PROPERTY.md).
 
 **Password for every demo user:** `password`
 
@@ -50,6 +52,8 @@ If image or inventory APIs return 500 after a schema change, rebuild the backend
 | Inle Lake Lodge | `inle.admin@booka.com` | `inle.staff@booka.com` |
 | Bagan Sandstone Inn | `bagan.admin@booka.com` | `bagan.staff@booka.com` |
 | Mandalay Heritage House | `mandalay.admin@booka.com` | `mandalay.staff@booka.com` |
+
+**Buyer-style onboarding (optional):** open `/register-property`, create a new hotel + manager, then Operations → **Team** to invite a front-desk user. The new hotel also appears on the guest site.
 
 ### Handy seed data
 
@@ -158,20 +162,21 @@ Note: Bagan is blacked out those nights; other hotels may still show options. Fo
 
 ## 4. Staff login and property scope
 
-**Goal:** Reach Operations for the right hotel.
+**Goal:** Reach Operations for the right hotel; prove isolation.
 
 1. Open `/login`.
 2. Sign in as `staff@booka.com` / `password`.
 
-**Expect:** Operations shell; sidebar property name **Booka Grand Hotel** (not only “Property #1”). Menu includes Dashboard, Front Office, Inventory, Reservations, Housekeeping, Maintenance, Folios, Blackouts, Assistant (labels may vary slightly).
+**Expect:** Operations shell; sidebar property name **Booka Grand Hotel** (not only “Property #1”). Menu includes Dashboard, Front Office, Inventory, Reservations, Housekeeping, Maintenance, Folios, Blackouts, Assistant (managers also see **Team**).
 
 3. Log out. Sign in as `harbour.staff@booka.com` / `password`.
 
-**Expect:** Harbourview-scoped rooms and reservations only.
+**Expect:** Harbourview-scoped rooms and reservations only. Looking up Booka Grand code `BK-DEMO-101` by confirmation code should fail / not belong to this property.
 
 4. Log out again. Sign in as `staff@booka.com` for the front-desk path below (or stay on Harbourview if you will assign `BK-DEMO-104`).
 
-**Optional:** While logged out, open `/admin` → redirected to login.
+**Optional:** While logged out, open `/admin` → redirected to login.  
+**Optional:** `/register-property` creates a fresh hotel + manager for a sellable demo.
 
 ---
 

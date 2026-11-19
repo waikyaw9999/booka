@@ -45,7 +45,13 @@ public class FolioService {
 
     @Transactional
     public FolioResponse postCharge(Long bookingId, PostChargeRequest request) {
+        return postCharge(bookingId, request, null);
+    }
+
+    @Transactional
+    public FolioResponse postCharge(Long bookingId, PostChargeRequest request, Long staffHotelId) {
         Folio folio = requireOpenFolio(bookingId);
+        assertFolioHotel(folio, staffHotelId);
         if (request.type() != FolioLineType.POS_FB && request.type() != FolioLineType.ADJUSTMENT) {
             throw new BusinessException("Only POS_FB or ADJUSTMENT charges can be posted manually");
         }
@@ -60,11 +66,13 @@ public class FolioService {
     }
 
     @Transactional
-    public FolioResponse postDeskPayment(Long bookingId, BigDecimal amount, PaymentMethod method, String reference) {
+    public FolioResponse postDeskPayment(
+            Long bookingId, BigDecimal amount, PaymentMethod method, String reference, Long staffHotelId) {
         if (amount == null || amount.signum() <= 0) {
             throw new BusinessException("Payment amount must be greater than zero");
         }
         Folio folio = requireOpenFolio(bookingId);
+        assertFolioHotel(folio, staffHotelId);
         String externalRef = null;
         if (reference != null && !reference.isBlank()) {
             externalRef = method.name() + ":" + reference.trim();
@@ -113,8 +121,13 @@ public class FolioService {
     }
 
     public FolioResponse getFolioByBookingId(Long bookingId) {
+        return getFolioByBookingId(bookingId, null);
+    }
+
+    public FolioResponse getFolioByBookingId(Long bookingId, Long staffHotelId) {
         Folio folio = folioRepository.findByBookingId(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Folio not found for booking: " + bookingId));
+        assertFolioHotel(folio, staffHotelId);
         List<FolioLineItem> items = folioLineItemRepository.findByFolioIdOrderByPostedAtAsc(folio.getId());
         BigDecimal charges = BigDecimal.ZERO;
         BigDecimal payments = BigDecimal.ZERO;
@@ -144,6 +157,15 @@ public class FolioService {
             throw new BusinessException("Folio is closed");
         }
         return folio;
+    }
+
+    private void assertFolioHotel(Folio folio, Long staffHotelId) {
+        if (staffHotelId == null) {
+            return;
+        }
+        if (!staffHotelId.equals(folio.getHotelId())) {
+            throw new BusinessException("Resource does not belong to your hotel");
+        }
     }
 
     private void postLine(Long folioId, FolioLineType type, String description, BigDecimal amount, String externalRef) {

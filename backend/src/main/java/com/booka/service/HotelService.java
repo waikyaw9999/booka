@@ -93,10 +93,13 @@ public class HotelService {
     }
 
     @Transactional
-    public RoomTypeResponse createRoomType(CreateRoomTypeRequest request) {
-        findHotel(request.hotelId());
+    public RoomTypeResponse createRoomType(CreateRoomTypeRequest request, Long staffHotelId) {
+        Long hotelId = requireStaffHotelId(staffHotelId);
+        assertHotelAccess(request.hotelId() != null ? request.hotelId() : hotelId, hotelId);
+        // Always bind new room types to the staff member's property.
+        findHotel(hotelId);
         RoomType roomType = RoomType.builder()
-                .hotelId(request.hotelId())
+                .hotelId(hotelId)
                 .name(request.name().trim())
                 .description(request.description())
                 .maxOccupancy(request.maxOccupancy())
@@ -166,8 +169,20 @@ public class HotelService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room type not found: " + id));
     }
 
+    /**
+     * Property-scoped staff must have a hotel assignment. Booka sells one property account
+     * per manager/team login — no cross-hotel ops for STAFF/ADMIN.
+     */
+    public Long requireStaffHotelId(Long staffHotelId) {
+        if (staffHotelId == null) {
+            throw new BusinessException("Your account is not assigned to a property");
+        }
+        return staffHotelId;
+    }
+
     void assertHotelAccess(Long hotelId, Long staffHotelId) {
-        if (staffHotelId != null && !staffHotelId.equals(hotelId)) {
+        Long scoped = requireStaffHotelId(staffHotelId);
+        if (!scoped.equals(hotelId)) {
             throw new BusinessException("Resource does not belong to your hotel");
         }
     }

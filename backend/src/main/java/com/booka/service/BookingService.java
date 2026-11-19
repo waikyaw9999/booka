@@ -60,9 +60,11 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse createWalkIn(WalkInReservationRequest request) {
+    public BookingResponse createWalkIn(WalkInReservationRequest request, Long staffHotelId) {
+        Long hotelId = hotelService.requireStaffHotelId(staffHotelId);
+        hotelService.assertHotelAccess(request.hotelId() != null ? request.hotelId() : hotelId, hotelId);
         return createInternal(
-                request.hotelId(),
+                hotelId,
                 request.roomTypeId(),
                 request.roomId(),
                 request.checkInDate(),
@@ -169,9 +171,8 @@ public class BookingService {
     }
 
     public PageResponse<BookingResponse> listBookings(Long hotelId, int page, int size) {
-        Page<Booking> result = hotelId != null
-                ? bookingRepository.findByHotelId(hotelId, PageRequest.of(page, size))
-                : bookingRepository.findAll(PageRequest.of(page, size));
+        Long scopedHotelId = hotelService.requireStaffHotelId(hotelId);
+        Page<Booking> result = bookingRepository.findByHotelId(scopedHotelId, PageRequest.of(page, size));
         return new PageResponse<>(
                 result.getContent().stream().map(this::toResponse).toList(),
                 result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
@@ -181,7 +182,7 @@ public class BookingService {
         return toResponse(findBooking(id));
     }
 
-    public BookingResponse getBookingByConfirmationCode(String confirmationCode) {
+    public BookingResponse getBookingByConfirmationCode(String confirmationCode, Long staffHotelId) {
         String code = confirmationCode == null ? "" : confirmationCode.trim();
         if (code.isEmpty()) {
             throw new ResourceNotFoundException("Booking not found for confirmation code");
@@ -189,19 +190,21 @@ public class BookingService {
         Booking booking = bookingRepository.findByConfirmationCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Booking not found for confirmation code: " + code));
+        hotelService.assertHotelAccess(booking.getHotelId(), staffHotelId);
         return toResponse(booking);
     }
 
     @Transactional
-    public BookingResponse updateStatus(Long id, BookingStatus status) {
+    public BookingResponse updateStatus(Long id, BookingStatus status, Long staffHotelId) {
+        assertBookingHotel(id, staffHotelId);
         if (status == BookingStatus.CHECKED_IN) {
-            return checkIn(id, false);
+            return checkIn(id, false, staffHotelId);
         }
         if (status == BookingStatus.CHECKED_OUT) {
-            return checkOut(id);
+            return checkOut(id, staffHotelId);
         }
         if (status == BookingStatus.NO_SHOW) {
-            return markNoShow(id, true);
+            return markNoShow(id, true, staffHotelId);
         }
         Booking booking = findBooking(id);
         validateStatusTransition(booking.getStatus(), status);
@@ -218,7 +221,8 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse checkIn(Long id, boolean force) {
+    public BookingResponse checkIn(Long id, boolean force, Long staffHotelId) {
+        assertBookingHotel(id, staffHotelId);
         Booking booking = findBooking(id);
         if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
             throw new BusinessException("Only confirmed (or pending) bookings can be checked in");
@@ -247,7 +251,8 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse checkOut(Long id) {
+    public BookingResponse checkOut(Long id, Long staffHotelId) {
+        assertBookingHotel(id, staffHotelId);
         Booking booking = findBooking(id);
         if (booking.getStatus() != BookingStatus.CHECKED_IN) {
             throw new BusinessException("Only checked-in bookings can be checked out");
@@ -265,7 +270,8 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse assignRoom(Long bookingId, Long roomId) {
+    public BookingResponse assignRoom(Long bookingId, Long roomId, Long staffHotelId) {
+        assertBookingHotel(bookingId, staffHotelId);
         Booking booking = findBooking(bookingId);
         if (booking.getStatus() == BookingStatus.CHECKED_OUT
                 || booking.getStatus() == BookingStatus.CANCELLED
@@ -274,6 +280,8 @@ public class BookingService {
         }
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
+        var roomType = hotelService.findRoomType(room.getRoomTypeId());
+        hotelService.assertHotelAccess(roomType.getHotelId(), staffHotelId);
         if (!room.getRoomTypeId().equals(booking.getRoomTypeId())) {
             throw new BusinessException("Room type mismatch");
         }
@@ -357,7 +365,8 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse markNoShow(Long id, boolean retainOneNight) {
+    public BookingResponse markNoShow(Long id, boolean retainOneNight, Long staffHotelId) {
+        assertBookingHotel(id, staffHotelId);
         Booking booking = findBooking(id);
         if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.PENDING) {
             throw new BusinessException("Only expected arrivals can be marked as no-show");
@@ -366,6 +375,11 @@ public class BookingService {
         releaseOccupiedRoom(booking);
         applyNoShowAllowance(booking, retainOneNight);
         return toResponse(bookingRepository.save(booking));
+    }
+
+    private void assertBookingHotel(Long bookingId, Long staffHotelId) {
+        Booking booking = findBooking(bookingId);
+        hotelService.assertHotelAccess(booking.getHotelId(), staffHotelId);
     }
 
     @Transactional

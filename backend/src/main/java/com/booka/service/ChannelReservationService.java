@@ -47,7 +47,8 @@ public class ChannelReservationService {
         if (existing.isPresent()) {
             Booking booking = existing.get();
             if ("CANCELLED".equalsIgnoreCase(request.status())) {
-                return bookingService.updateStatus(booking.getId(), BookingStatus.CANCELLED);
+                return bookingService.updateStatus(
+                        booking.getId(), BookingStatus.CANCELLED, booking.getHotelId());
             }
             return bookingService.getBooking(booking.getId());
         }

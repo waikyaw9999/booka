@@ -20,6 +20,36 @@ public final class AuthDtos {
             @NotBlank String fullName
     ) {}
 
+    /**
+     * Self-serve property onboarding: creates a hotel + manager (ADMIN) bound to that hotel.
+     */
+    public record RegisterPropertyRequest(
+            @NotBlank String hotelName,
+            String description,
+            @NotBlank String address,
+            @NotBlank String city,
+            @NotBlank String country,
+            String amenities,
+            String cancellationPolicy,
+            @NotBlank @Email String managerEmail,
+            @NotBlank @Size(min = 6) String managerPassword,
+            @NotBlank String managerFullName
+    ) {}
+
+    public record CreateStaffRequest(
+            @NotBlank @Email String email,
+            @NotBlank @Size(min = 6) String password,
+            @NotBlank String fullName
+    ) {}
+
+    public record StaffMemberResponse(
+            Long id,
+            String email,
+            String fullName,
+            UserRole role,
+            Long hotelId
+    ) {}
+
     public record AuthResponse(
             String token,
             Long userId,

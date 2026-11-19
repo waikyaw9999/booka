@@ -75,6 +75,38 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ email, password, fullName }) },
     ),
 
+  registerProperty: (body: {
+    hotelName: string;
+    description?: string;
+    address: string;
+    city: string;
+    country: string;
+    amenities?: string;
+    cancellationPolicy?: string;
+    managerEmail: string;
+    managerPassword: string;
+    managerFullName: string;
+  }) =>
+    request<{ token: string; userId: number; email: string; fullName: string; role: string; hotelId: number | null }>(
+      '/api/v1/auth/register-property',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
+  listStaff: (token: string) =>
+    request<
+      { id: number; email: string; fullName: string; role: string; hotelId: number | null }[]
+    >('/api/v1/admin/staff', {}, token),
+
+  inviteStaff: (
+    token: string,
+    body: { email: string; password: string; fullName: string },
+  ) =>
+    request<{ id: number; email: string; fullName: string; role: string; hotelId: number | null }>(
+      '/api/v1/admin/staff',
+      { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
   getHotels: () => request<Hotel[]>('/api/v1/hotels'),
 
   getHotel: (id: number) => request<Hotel>(`/api/v1/hotels/${id}`),

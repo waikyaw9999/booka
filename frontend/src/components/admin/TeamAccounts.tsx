@@ -1,0 +1,131 @@
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, getErrorMessage } from '../../lib/api';
+import { EmptyState, InlineAlert, StatusPill } from '../ui';
+
+interface Props {
+  token: string;
+  hotelId: number;
+}
+
+export function TeamAccounts({ token, hotelId }: Props) {
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const { data: staff, isLoading } = useQuery({
+    queryKey: ['staff', hotelId],
+    queryFn: () => api.listStaff(token),
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: () =>
+      api.inviteStaff(token, {
+        email: email.trim(),
+        fullName: fullName.trim(),
+        password,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff', hotelId] });
+      setEmail('');
+      setFullName('');
+      setPassword('');
+      setError('');
+      setSuccess('Front-desk account created for this property.');
+    },
+    onError: (err) => {
+      setSuccess('');
+      setError(getErrorMessage(err, 'Unable to create team member.'));
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      {error && <InlineAlert tone="error">{error}</InlineAlert>}
+      {success && <InlineAlert tone="success">{success}</InlineAlert>}
+
+      <div className="surface-elevated p-5">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-moss">
+          Invite front desk
+        </p>
+        <p className="mb-4 text-sm text-ink/55">
+          New STAFF accounts can only see this property’s operations data.
+        </p>
+        <form
+          className="grid gap-3 sm:grid-cols-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            inviteMutation.mutate();
+          }}
+        >
+          <div>
+            <label className="label-caps">Full name</label>
+            <input
+              required
+              className="input-field"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-caps">Email</label>
+            <input
+              type="email"
+              required
+              className="input-field"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label-caps">Temporary password</label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              className="input-field"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="btn-primary" disabled={inviteMutation.isPending}>
+              {inviteMutation.isPending ? 'Creating…' : 'Add team member'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="surface-elevated overflow-hidden">
+        <div className="border-b border-sand/80 px-5 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-moss">
+            Property team
+          </p>
+        </div>
+        {isLoading && <p className="p-5 text-sm text-ink/50">Loading…</p>}
+        {!isLoading && (!staff || staff.length === 0) && (
+          <EmptyState title="No accounts yet" description="Invite a front-desk user to get started." />
+        )}
+        {staff && staff.length > 0 && (
+          <ul className="divide-y divide-sand/70">
+            {staff.map((member) => (
+              <li key={member.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <div>
+                  <p className="font-medium text-ink">{member.fullName}</p>
+                  <p className="text-sm text-ink/55">{member.email}</p>
+                </div>
+                <StatusPill
+                  label={member.role === 'ADMIN' ? 'Manager' : 'Front desk'}
+                  tone={member.role === 'ADMIN' ? 'confirmed' : 'default'}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}

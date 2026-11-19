@@ -52,7 +52,9 @@ Use this pack for launch / regression testing. Mark each case **Pass / Fail / Bl
 | ID | Feature | Steps | Expected |
 |----|---------|-------|----------|
 | S-01 | Staff login | `/login` as `staff@booka.com` / `password`. | Lands in Operations; sidebar shows **Booka Grand Hotel** (not only Property #1). |
-| S-02 | Per-property login | Login as `harbour.staff@booka.com`. | Ops scoped to Harbourview; dashboard/rooms match that hotel. |
+| S-02 | Per-property login | Login as `harbour.staff@booka.com`. | Ops scoped to Harbourview; dashboard/rooms match that hotel; cannot load another property’s `BK-DEMO-*` by code. |
+| S-06 | Register property | `/register-property` with a unique manager email. | Creates hotel + ADMIN; lands in Operations; hotel appears on guest site. |
+| S-07 | Invite staff | As manager, Team tab → invite front desk. | New STAFF login works; sees same hotel only. |
 | S-03 | Manager login | Login as `admin@booka.com`. | Full ops access for Booka Grand. |
 | S-04 | Guest vs staff | As guest (no login), open `/admin`. | Redirected to login. |
 | S-05 | Demo credentials on login | Check login page in production build. | Demo emails/passwords **not** shown in prod; OK in local DEV only. |

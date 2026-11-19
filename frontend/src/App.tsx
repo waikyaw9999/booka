@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage';
 import { HotelDetailPage } from './pages/HotelDetailPage';
 import { BookingPage } from './pages/BookingPage';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPropertyPage } from './pages/RegisterPropertyPage';
 import { AdminPage } from './pages/AdminPage';
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/hotels/:id" element={<HotelDetailPage />} />
             <Route path="/book" element={<BookingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register-property" element={<RegisterPropertyPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />

@@ -35,14 +35,16 @@ public class RagController {
     }
 
     @PostMapping("/documents")
-    RagDocumentResponse ingestDocument(@Valid @RequestBody IngestDocumentRequest request) {
-        return ragService.ingestDocument(request);
+    RagDocumentResponse ingestDocument(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @Valid @RequestBody IngestDocumentRequest request) {
+        return ragService.ingestDocument(request, user);
     }
 
     @GetMapping("/documents")
     List<RagDocumentResponse> listDocuments(
-            @RequestParam RagAudience audience,
-            @RequestParam(required = false) Long hotelId) {
-        return ragService.listDocuments(audience, hotelId);
+            @AuthenticationPrincipal BookaUserDetails user,
+            @RequestParam RagAudience audience) {
+        return ragService.listDocuments(audience, user.getHotelId());
     }
 }
