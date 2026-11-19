@@ -11,6 +11,7 @@ import { FolioPanel } from '../components/admin/FolioPanel';
 import { WalkInForm } from '../components/admin/WalkInForm';
 import { PropertyInventory } from '../components/admin/PropertyInventory';
 import { TeamAccounts } from '../components/admin/TeamAccounts';
+import { BillingPanel } from '../components/admin/BillingPanel';
 import { GuestDirectory } from '../components/admin/GuestDirectory';
 import { GuestRequests } from '../components/admin/GuestRequests';
 import { NightAuditPanel } from '../components/admin/NightAuditPanel';
@@ -27,6 +28,7 @@ type Tab =
   | 'folios'
   | 'inventory'
   | 'team'
+  | 'billing'
   | 'blackouts'
   | 'guests'
   | 'requests'
@@ -42,6 +44,7 @@ const TAB_IDS: Tab[] = [
   'folios',
   'inventory',
   'team',
+  'billing',
   'blackouts',
   'guests',
   'requests',
@@ -354,9 +357,20 @@ export function AdminPage() {
           <PageHeader
             eyebrow="Access"
             title="Property team"
-            description="Managers invite front-desk accounts scoped only to this hotel."
+            description="Invite front desk, deactivate accounts, and reset passwords for this hotel only."
           />
           <TeamAccounts token={user.token} hotelId={hotelId} />
+        </div>
+      )}
+
+      {tab === 'billing' && user?.role === 'ADMIN' && hotelId != null && (
+        <div className="space-y-5 animate-tab">
+          <PageHeader
+            eyebrow="Subscription"
+            title="Property billing"
+            description="Plan status for this hotel. Stripe subscription Checkout can replace the stub later."
+          />
+          <BillingPanel token={user.token} hotelId={hotelId} />
         </div>
       )}
 

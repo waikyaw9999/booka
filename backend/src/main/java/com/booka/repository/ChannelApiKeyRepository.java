@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface ChannelApiKeyRepository extends JpaRepository<ChannelApiKey, Long> {
     List<ChannelApiKey> findByChannelAndActiveTrue(String channel);
+
+    List<ChannelApiKey> findByChannelAndHotelIdAndActiveTrue(String channel, Long hotelId);
 }

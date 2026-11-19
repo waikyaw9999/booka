@@ -1,7 +1,9 @@
 package com.booka.controller;
 
 import com.booka.dto.AuthDtos.CreateStaffRequest;
+import com.booka.dto.AuthDtos.ResetStaffPasswordRequest;
 import com.booka.dto.AuthDtos.StaffMemberResponse;
+import com.booka.dto.HotelDtos.HotelBillingResponse;
 import com.booka.dto.BlackoutDtos.*;
 import com.booka.dto.BookingDtos.*;
 import com.booka.dto.FolioDtos.*;
@@ -34,6 +36,7 @@ public class AdminController {
     private final FolioService folioService;
     private final ImageService imageService;
     private final StaffUserService staffUserService;
+    private final BillingService billingService;
 
     @GetMapping("/dashboard")
     DashboardStatsResponse dashboard(@AuthenticationPrincipal BookaUserDetails user) {
@@ -299,6 +302,32 @@ public class AdminController {
             @AuthenticationPrincipal BookaUserDetails user,
             @Valid @RequestBody CreateStaffRequest request) {
         return staffUserService.inviteStaff(user, request);
+    }
+
+    @PatchMapping("/staff/{id}/active")
+    StaffMemberResponse setStaffActive(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @RequestParam boolean active) {
+        return staffUserService.setActive(user, id, active);
+    }
+
+    @PostMapping("/staff/{id}/reset-password")
+    StaffMemberResponse resetStaffPassword(
+            @AuthenticationPrincipal BookaUserDetails user,
+            @PathVariable Long id,
+            @Valid @RequestBody ResetStaffPasswordRequest request) {
+        return staffUserService.resetPassword(user, id, request);
+    }
+
+    @GetMapping("/billing")
+    HotelBillingResponse getBilling(@AuthenticationPrincipal BookaUserDetails user) {
+        return billingService.getBilling(hotelId(user));
+    }
+
+    @PostMapping("/billing/activate-starter")
+    HotelBillingResponse activateStarter(@AuthenticationPrincipal BookaUserDetails user) {
+        return billingService.activateStarterStub(hotelId(user));
     }
 
     private Long hotelId(BookaUserDetails user) {

@@ -25,6 +25,8 @@ import type {
   TicketStatus,
   FolioLineType,
   PropertyImage,
+  StaffMember,
+  HotelBilling,
 } from '../types';
 import { normalizeHttpError, normalizeNetworkError } from './errors';
 
@@ -93,17 +95,39 @@ export const api = {
     ),
 
   listStaff: (token: string) =>
-    request<
-      { id: number; email: string; fullName: string; role: string; hotelId: number | null }[]
-    >('/api/v1/admin/staff', {}, token),
+    request<StaffMember[]>('/api/v1/admin/staff', {}, token),
 
   inviteStaff: (
     token: string,
     body: { email: string; password: string; fullName: string },
   ) =>
-    request<{ id: number; email: string; fullName: string; role: string; hotelId: number | null }>(
+    request<StaffMember>(
       '/api/v1/admin/staff',
       { method: 'POST', body: JSON.stringify(body) },
+      token,
+    ),
+
+  setStaffActive: (token: string, id: number, active: boolean) =>
+    request<StaffMember>(
+      `/api/v1/admin/staff/${id}/active?active=${active}`,
+      { method: 'PATCH' },
+      token,
+    ),
+
+  resetStaffPassword: (token: string, id: number, newPassword: string) =>
+    request<StaffMember>(
+      `/api/v1/admin/staff/${id}/reset-password`,
+      { method: 'POST', body: JSON.stringify({ newPassword }) },
+      token,
+    ),
+
+  getBilling: (token: string) =>
+    request<HotelBilling>('/api/v1/admin/billing', {}, token),
+
+  activateStarterPlan: (token: string) =>
+    request<HotelBilling>(
+      '/api/v1/admin/billing/activate-starter',
+      { method: 'POST' },
       token,
     ),
 

@@ -3,8 +3,10 @@ package com.booka.service;
 import com.booka.domain.entity.User;
 import com.booka.domain.enums.UserRole;
 import com.booka.dto.AuthDtos.CreateStaffRequest;
+import com.booka.dto.AuthDtos.ResetStaffPasswordRequest;
 import com.booka.dto.AuthDtos.StaffMemberResponse;
 import com.booka.exception.BusinessException;
+import com.booka.exception.ResourceNotFoundException;
 import com.booka.repository.UserRepository;
 import com.booka.security.BookaUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -47,8 +49,45 @@ public class StaffUserService {
                 .fullName(request.fullName().trim())
                 .role(UserRole.STAFF)
                 .hotelId(hotelId)
+                .active(true)
                 .build();
         return toResponse(userRepository.save(staff));
+    }
+
+    @Transactional
+    public StaffMemberResponse setActive(BookaUserDetails actor, Long userId, boolean active) {
+        requireManager(actor);
+        User target = requireSameHotelStaff(actor, userId);
+        if (target.getId().equals(actor.getId())) {
+            throw new BusinessException("You cannot deactivate your own account");
+        }
+        if (target.getRole() == UserRole.ADMIN && !active) {
+            throw new BusinessException("Deactivate other managers via support for now");
+        }
+        target.setActive(active);
+        return toResponse(userRepository.save(target));
+    }
+
+    @Transactional
+    public StaffMemberResponse resetPassword(
+            BookaUserDetails actor, Long userId, ResetStaffPasswordRequest request) {
+        requireManager(actor);
+        User target = requireSameHotelStaff(actor, userId);
+        target.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        return toResponse(userRepository.save(target));
+    }
+
+    private User requireSameHotelStaff(BookaUserDetails actor, Long userId) {
+        Long hotelId = hotelService.requireStaffHotelId(actor.getHotelId());
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (target.getHotelId() == null || !hotelId.equals(target.getHotelId())) {
+            throw new BusinessException("User does not belong to your property");
+        }
+        if (target.getRole() != UserRole.STAFF && target.getRole() != UserRole.ADMIN) {
+            throw new BusinessException("Not a property team account");
+        }
+        return target;
     }
 
     private void requireManager(BookaUserDetails actor) {
@@ -63,6 +102,7 @@ public class StaffUserService {
                 user.getEmail(),
                 user.getFullName(),
                 user.getRole(),
-                user.getHotelId());
+                user.getHotelId(),
+                user.isActive());
     }
 }

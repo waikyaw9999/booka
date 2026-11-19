@@ -9,6 +9,7 @@ const NAV = [
   { id: 'front-office', label: 'Front Office', path: '/admin?tab=front-office' },
   { id: 'inventory', label: 'Inventory', path: '/admin?tab=inventory' },
   { id: 'team', label: 'Team', path: '/admin?tab=team' },
+  { id: 'billing', label: 'Billing', path: '/admin?tab=billing' },
   { id: 'reservations', label: 'Reservations', path: '/admin?tab=reservations' },
   { id: 'guests', label: 'Guests', path: '/admin?tab=guests' },
   { id: 'requests', label: 'Requests', path: '/admin?tab=requests' },
@@ -59,7 +60,9 @@ export function AdminLayout() {
   const activeTab = params.get('tab') ?? 'dashboard';
   const propertyLabel = hotel?.name ?? `Property #${user.hotelId}`;
   const navItems =
-    user.role === 'ADMIN' ? NAV : NAV.filter((item) => item.id !== 'team');
+    user.role === 'ADMIN'
+      ? NAV
+      : NAV.filter((item) => item.id !== 'team' && item.id !== 'billing');
 
   function handleLogout() {
     clearStaffMessages();

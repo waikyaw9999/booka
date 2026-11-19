@@ -1,6 +1,5 @@
 package com.booka.service;
 
-import com.booka.domain.entity.Hotel;
 import com.booka.domain.entity.User;
 import com.booka.domain.enums.UserRole;
 import com.booka.dto.AuthDtos.*;
@@ -26,11 +25,16 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final HotelService hotelService;
+    private final PropertyStarterService propertyStarterService;
+    private final ChannelApiKeyService channelApiKeyService;
 
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         BookaUserDetails userDetails = (BookaUserDetails) authentication.getPrincipal();
+        if (!userDetails.isActive()) {
+            throw new BusinessException("This account has been deactivated");
+        }
         if ((userDetails.getRole() == UserRole.ADMIN || userDetails.getRole() == UserRole.STAFF)
                 && userDetails.getHotelId() == null) {
             throw new BusinessException(
@@ -52,6 +56,7 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .fullName(request.fullName().trim())
                 .role(UserRole.GUEST)
+                .active(true)
                 .build();
         userRepository.save(user);
         String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole(), null);
@@ -77,12 +82,16 @@ public class AuthService {
                 blankToNull(request.amenities()),
                 blankToNull(request.cancellationPolicy())));
 
+        propertyStarterService.seedStarterInventory(hotelResponse.id());
+        channelApiKeyService.ensurePropertyChannelKeysFromConfig(hotelResponse.id());
+
         User manager = User.builder()
                 .email(email)
                 .passwordHash(passwordEncoder.encode(request.managerPassword()))
                 .fullName(request.managerFullName().trim())
                 .role(UserRole.ADMIN)
                 .hotelId(hotelResponse.id())
+                .active(true)
                 .build();
         userRepository.save(manager);
 

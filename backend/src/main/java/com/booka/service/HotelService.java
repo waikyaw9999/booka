@@ -2,6 +2,8 @@ package com.booka.service;
 
 import com.booka.domain.entity.*;
 import com.booka.domain.enums.RoomStatus;
+import com.booka.domain.enums.SubscriptionPlan;
+import com.booka.domain.enums.SubscriptionStatus;
 import com.booka.dto.HotelDtos.*;
 import com.booka.dto.ImageDtos;
 import com.booka.exception.BusinessException;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -62,6 +65,7 @@ public class HotelService {
 
     @Transactional
     public HotelResponse createHotel(CreateHotelRequest request) {
+        Instant trialEnd = Instant.now().plus(30, ChronoUnit.DAYS);
         Hotel hotel = Hotel.builder()
                 .name(request.name())
                 .description(request.description())
@@ -70,6 +74,9 @@ public class HotelService {
                 .country(request.country())
                 .amenities(request.amenities())
                 .cancellationPolicy(request.cancellationPolicy())
+                .subscriptionPlan(SubscriptionPlan.TRIAL)
+                .subscriptionStatus(SubscriptionStatus.TRIALING)
+                .trialEndsAt(trialEnd)
                 .build();
         return toHotelResponse(hotelRepository.save(hotel));
     }
@@ -225,7 +232,11 @@ public class HotelService {
                 h.getAmenities(),
                 h.getCancellationPolicy(),
                 images,
-                primaryUrl);
+                primaryUrl,
+                h.getSubscriptionPlan() == null ? null : h.getSubscriptionPlan().name(),
+                h.getSubscriptionStatus() == null ? null : h.getSubscriptionStatus().name(),
+                h.getTrialEndsAt(),
+                h.getSubscriptionRenewsAt());
     }
 
     private RoomTypeResponse toRoomTypeResponse(RoomType rt) {

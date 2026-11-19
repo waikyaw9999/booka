@@ -42,12 +42,17 @@ public final class AuthDtos {
             @NotBlank String fullName
     ) {}
 
+    public record ResetStaffPasswordRequest(
+            @NotBlank @Size(min = 6) String newPassword
+    ) {}
+
     public record StaffMemberResponse(
             Long id,
             String email,
             String fullName,
             UserRole role,
-            Long hotelId
+            Long hotelId,
+            boolean active
     ) {}
 
     public record AuthResponse(

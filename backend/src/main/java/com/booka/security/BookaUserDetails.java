@@ -18,14 +18,23 @@ public class BookaUserDetails implements UserDetails {
     private final String password;
     private final UserRole role;
     private final Long hotelId;
+    private final boolean active;
 
-    public BookaUserDetails(Long id, String email, String fullName, String password, UserRole role, Long hotelId) {
+    public BookaUserDetails(
+            Long id,
+            String email,
+            String fullName,
+            String password,
+            UserRole role,
+            Long hotelId,
+            boolean active) {
         this.id = id;
         this.email = email;
         this.fullName = fullName;
         this.password = password;
         this.role = role;
         this.hotelId = hotelId;
+        this.active = active;
     }
 
     @Override
@@ -45,7 +54,7 @@ public class BookaUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return active;
     }
 
     @Override
@@ -55,6 +64,6 @@ public class BookaUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return active;
     }
 }

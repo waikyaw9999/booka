@@ -31,6 +31,7 @@ Liquibase runs on backend start. Confirm the DB includes at least:
 | `005`–`006` | Commercial copy + 5 Myanmar properties, rooms, images, blackouts, `BK-DEMO-*` |
 | `007` | Commercial ops columns (guest VIP fields, night audit tables, etc.) |
 | `008` | Per-property manager / front-desk logins |
+| `009` | Subscription fields on hotels, `users.active`, per-hotel channel API keys |
 
 If image or inventory APIs return 500 after a schema change, rebuild the backend image so Liquibase re-applies (do not rely on an old jar).
 
@@ -53,7 +54,7 @@ Each property has its **own** manager and front-desk login. Ops data is isolated
 | Bagan Sandstone Inn | `bagan.admin@booka.com` | `bagan.staff@booka.com` |
 | Mandalay Heritage House | `mandalay.admin@booka.com` | `mandalay.staff@booka.com` |
 
-**Buyer-style onboarding (optional):** open `/register-property`, create a new hotel + manager, then Operations → **Team** to invite a front-desk user. The new hotel also appears on the guest site.
+**Buyer-style onboarding (optional):** open `/register-property`, create a new hotel + manager. Expect starter **Standard/Deluxe** rooms in Inventory, **TRIAL** on Billing, and Team invite/deactivate/reset-password. Activate Starter via the billing stub. The new hotel also appears on the guest site.
 
 ### Handy seed data
 
@@ -176,7 +177,9 @@ Note: Bagan is blacked out those nights; other hotels may still show options. Fo
 4. Log out again. Sign in as `staff@booka.com` for the front-desk path below (or stay on Harbourview if you will assign `BK-DEMO-104`).
 
 **Optional:** While logged out, open `/admin` → redirected to login.  
-**Optional:** `/register-property` creates a fresh hotel + manager for a sellable demo.
+**Optional:** `/register-property` creates a fresh hotel + manager for a sellable demo (starter rooms + trial billing).  
+**Optional:** As manager, Team → deactivate a desk user → confirm login fails; reset password → desk can sign in again.  
+**Channel:** with `CHANNEL_API_KEY` set, inbound `POST /api/v1/channels/OTA/reservations` must use a key scoped to that `hotelId` (cross-hotel body rejected).
 
 ---
 
